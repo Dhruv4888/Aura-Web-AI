@@ -19,26 +19,15 @@ class AuraAssistant:
 
     async def _generate_voice(self, text, filename):
         selected_voice = "hi-IN-MadhurNeural" if self.is_hindi(text) else "en-IN-PrabhatNeural"
-        # Rate aur Pitch bilkul sahi male voice ke liye
         communicate = edge_tts.Communicate(text, selected_voice, rate="+15%", pitch="-2Hz")
         await communicate.save(filename)
 
     def speak(self, text):
-        # Gender Correction: Kisi bhi haal mein female words ko male mein badalna
-        corrections = {
-            "sakti hoon": "sakta hoon",
-            "karti hoon": "karta hoon",
-            "rahi hoon": "raha hoon",
-            "hoon main ek female": "hoon main ek male",
-            "ladki hoon": "ladka hoon",
-            "assistant hoon": "male assistant hoon"
-        }
-        
+        # Strict Gender Correction
+        corrections = {"sakti hoon": "sakta hoon", "karti hoon": "karta hoon", "rahi hoon": "raha hoon"}
         clean_text = text.lower()
         for wrong, right in corrections.items():
             clean_text = clean_text.replace(wrong, right)
-        
-        clean_text = clean_text.replace("*", "").replace("#", "")
         
         filename = "aura_voice.mp3"
         try:
@@ -46,31 +35,18 @@ class AuraAssistant:
             with open(filename, "rb") as f:
                 st.audio(f.read(), format="audio/mp3", autoplay=True)
             if os.path.exists(filename): os.remove(filename)
-        except:
-            pass
+        except: pass
 
     def ask(self, query, history):
         try:
-            # Memory ke liye messages ki list taiyar karna
-            messages = [
-                {
-                    "role": "system", 
-                    "content": "Strict Instruction: You are AURA, a MALE AI. Remember previous chat details to provide context. Always use 'karta hoon', 'raha hoon', 'sakta hoon'. You are NOT a female. Reply in short sentences."
-                }
-            ]
-            
-            # Purani chat history add karna
+            # Professional System Prompt
+            messages = [{"role": "system", "content": "You are AURA, a highly professional MALE AI. Maintain context from previous chats. Use formal Hindi/English. Gender: Male. No fluff, direct answers."}]
             messages.extend(history)
-            
-            # Naya sawal add karna
             messages.append({"role": "user", "content": query})
 
-            chat_completion = self.client.chat.completions.create(
-                messages=messages,
-                model=self.model,
-            )
+            chat_completion = self.client.chat.completions.create(messages=messages, model=self.model)
             return chat_completion.choices[0].message.content
         except:
-            return "Server error, Sir."
+            return "Connection lost, Sir."
 
 aura = AuraAssistant()
