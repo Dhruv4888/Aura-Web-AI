@@ -2,3 +2,4 @@ streamlit
 groq
 speechrecognition
 edge-tts
+streamlit-mic-recorder
