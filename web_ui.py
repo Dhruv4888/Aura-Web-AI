@@ -35,10 +35,12 @@ st.markdown("""
 st.write("<h1>AURA</h1>", unsafe_allow_html=True)
 
 # Mic Tool: Iska button ab CSS se hamare style mein dikhega
+# Mic Tool: Isko humne Indian English (en-IN) par set kiya hai behtar recognition ke liye
 text = speech_to_text(
-    start_prompt="TAP", 
-    stop_prompt="LISTENING...", 
-    language='en', 
+    start_prompt="TAP TO SPEAK", 
+    stop_prompt="LISTENING... (TAP TO STOP)", 
+    language='en-IN', # Indian accent ke liye best hai
+    use_container_width=True,
     just_once=True, 
     key='aura_mic'
 )
