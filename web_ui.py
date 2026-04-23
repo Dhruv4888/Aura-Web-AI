@@ -4,7 +4,11 @@ from streamlit_mic_recorder import speech_to_text
 
 st.set_page_config(page_title="AURA AI", page_icon="🎙️", layout="centered")
 
-# CSS Fix: Is baar humne formatting ekdum simple rakhi hai taaki leak na ho
+# --- MEMORY INITIALIZATION ---
+if "messages" not in st.session_state:
+    st.session_state.messages = []
+
+# CSS Fix: Futuristic Look aur Hide Elements
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap');
@@ -62,13 +66,22 @@ text = speech_to_text(
     language='en-IN', 
     use_container_width=True,
     just_once=True, 
-    key='aura_mic_fixed'
+    key='aura_mic_memory'
 )
 
 if text:
+    # Screen par user ka message dikhana
     st.markdown(f'<div class="chat-container"><b>You:</b> {text}</div>', unsafe_allow_html=True)
+    
     with st.spinner(""):
-        response = aura.ask(text)
+        # Aura se history ke saath response maangna
+        response = aura.ask(text, st.session_state.messages)
+        
+        # Memory Update karna (User aur Assistant dono ki baatein)
+        st.session_state.messages.append({"role": "user", "content": text})
+        st.session_state.messages.append({"role": "assistant", "content": response})
+        
+        # Response dikhana aur bolna
         st.markdown(f'<div class="chat-container"><b>Aura:</b> {response}</div>', unsafe_allow_html=True)
         aura.speak(response)
 else:
