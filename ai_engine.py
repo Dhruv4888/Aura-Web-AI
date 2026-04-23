@@ -18,10 +18,8 @@ class AuraAssistant:
         return bool(re.search(r'[\u0900-\u097F]', text))
 
     async def _generate_voice(self, text, filename):
-        # Swararaaj ya Madhur ko tweak karke behtar sound karwana
         selected_voice = "hi-IN-MadhurNeural" if self.is_hindi(text) else "en-IN-PrabhatNeural"
-        
-        # Rate +15% (fast) aur Pitch -2Hz (deep male voice) robotic sound kam karne ke liye
+        # Rate aur Pitch bilkul sahi male voice ke liye
         communicate = edge_tts.Communicate(text, selected_voice, rate="+15%", pitch="-2Hz")
         await communicate.save(filename)
 
@@ -51,16 +49,24 @@ class AuraAssistant:
         except:
             pass
 
-    def ask(self, query):
+    def ask(self, query, history):
         try:
+            # Memory ke liye messages ki list taiyar karna
+            messages = [
+                {
+                    "role": "system", 
+                    "content": "Strict Instruction: You are AURA, a MALE AI. Remember previous chat details to provide context. Always use 'karta hoon', 'raha hoon', 'sakta hoon'. You are NOT a female. Reply in short sentences."
+                }
+            ]
+            
+            # Purani chat history add karna
+            messages.extend(history)
+            
+            # Naya sawal add karna
+            messages.append({"role": "user", "content": query})
+
             chat_completion = self.client.chat.completions.create(
-                messages=[
-                    {
-                        "role": "system", 
-                        "content": "Strict Instruction: You are AURA, a MALE AI. Always use 'karta hoon', 'raha hoon', 'sakta hoon'. You are NOT a female. Reply in short sentences."
-                    },
-                    {"role": "user", "content": query}
-                ],
+                messages=messages,
                 model=self.model,
             )
             return chat_completion.choices[0].message.content
