@@ -1,0 +1,8 @@
+streamlit
+groq
+speechrecognition
+edge-tts
+pygame
+pyautogui
+webbrowser
+asyncio
