@@ -18,20 +18,19 @@ class AuraAssistant:
         return bool(re.search(r'[\u0900-\u097F]', text))
 
     async def _generate_voice(self, text, filename):
-        # Male Voices wapis set kar di
         if self.is_hindi(text):
             selected_voice = "hi-IN-MadhurNeural"
         else:
             selected_voice = "en-IN-PrabhatNeural"
         
-        # Rate +10% kiya hai taaki bolne mein thodi raftar rahe aur robotic na lage
-        communicate = edge_tts.Communicate(text, selected_voice, rate="+10%", pitch="-1Hz")
+        # Rate thoda fast taaki natural lage
+        communicate = edge_tts.Communicate(text, selected_voice, rate="+12%", pitch="-1Hz")
         await communicate.save(filename)
 
     def speak(self, text):
-        clean_text = text.replace("*", "").replace("#", "")
-        # Pronunciation fix for common words
-        clean_text = clean_text.replace("Venus", "Veenus")
+        # Gender Correction Logic: Agar AI galti se "sakti" bole toh usse "sakta" kar do
+        clean_text = text.replace("sakti hoon", "sakta hoon").replace("karti hoon", "karta hoon")
+        clean_text = clean_text.replace("Rahi hoon", "Raha hoon").replace("*", "").replace("#", "")
         
         filename = "aura_voice.mp3"
         try:
@@ -48,7 +47,10 @@ class AuraAssistant:
         try:
             chat_completion = self.client.chat.completions.create(
                 messages=[
-                    {"role": "system", "content": "You are Aura, a smart AI. Reply in the user's language. Keep it very concise and professional."},
+                    {
+                        "role": "system", 
+                        "content": "You are Aura, a professional MALE AI assistant. Always use male gender terms in Hindi (like 'karta hoon', 'sakta hoon'). Keep your responses short and smart."
+                    },
                     {"role": "user", "content": query}
                 ],
                 model=self.model,
