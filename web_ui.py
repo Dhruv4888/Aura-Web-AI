@@ -2,13 +2,14 @@ import streamlit as st
 from ai_engine import aura
 from streamlit_mic_recorder import speech_to_text
 
-st.set_page_config(page_title="AURA AI", page_icon="🎙️", layout="centered")
+# Page Config Update: Title change to Gyan Setu
+st.set_page_config(page_title="Gyan Setu AI", page_icon="🎓", layout="centered")
 
 # --- MEMORY INITIALIZATION ---
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
-# CSS Fix: Futuristic Look aur Hide Elements
+# CSS: Wahi futuristic look par naye naam ke saath
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap');
@@ -19,12 +20,11 @@ st.markdown("""
         color: #00fbff !important; 
         font-family: 'Orbitron', sans-serif !important; 
         text-align: center !important; 
-        font-size: 60px !important; 
+        font-size: 50px !important; 
         text-shadow: 0 0 20px #00fbff;
         margin-top: -50px;
     }
     
-    /* Mic Button Style */
     button[data-testid="stBaseButton-secondary"] {
         background-color: #00fbff !important;
         color: #0b0e14 !important;
@@ -49,7 +49,6 @@ st.markdown("""
         font-family: 'Arial', sans-serif;
     }
 
-    /* Hide Streamlit Elements */
     #MainMenu {visibility: hidden;}
     header {visibility: hidden;}
     footer {visibility: hidden;}
@@ -57,32 +56,31 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-st.write("<h1>AURA</h1>", unsafe_allow_html=True)
+# Main Title Change
+st.write("<h1>GYAN SETU</h1>", unsafe_allow_html=True)
 
 # Mic Tool
 text = speech_to_text(
-    start_prompt="TAP", 
+    start_prompt="TAP TO ASK", 
     stop_prompt="LISTENING...", 
     language='en-IN', 
     use_container_width=True,
     just_once=True, 
-    key='aura_mic_memory'
+    key='gyansetu_mic'
 )
 
 if text:
-    # Screen par user ka message dikhana
     st.markdown(f'<div class="chat-container"><b>You:</b> {text}</div>', unsafe_allow_html=True)
     
-    with st.spinner(""):
-        # Aura se history ke saath response maangna
+    with st.spinner("Gyan Setu is thinking..."):
+        # Gyan Setu se response maangna
         response = aura.ask(text, st.session_state.messages)
         
-        # Memory Update karna (User aur Assistant dono ki baatein)
         st.session_state.messages.append({"role": "user", "content": text})
         st.session_state.messages.append({"role": "assistant", "content": response})
         
-        # Response dikhana aur bolna
-        st.markdown(f'<div class="chat-container"><b>Aura:</b> {response}</div>', unsafe_allow_html=True)
+        # Display as Gyan Setu
+        st.markdown(f'<div class="chat-container"><b>Gyan Setu:</b> {response}</div>', unsafe_allow_html=True)
         aura.speak(response)
 else:
-    st.markdown('<p style="text-align:center; color:#555; margin-top:20px;">Standby Mode...</p>', unsafe_allow_html=True)
+    st.markdown('<p style="text-align:center; color:#555; margin-top:20px;">Ready for your questions...</p>', unsafe_allow_html=True)
