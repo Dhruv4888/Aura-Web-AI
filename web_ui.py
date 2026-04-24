@@ -1,4 +1,4 @@
-vimport streamlit as st
+import streamlit as st
 from ai_engine import aura
 from streamlit_mic_recorder import speech_to_text
 import time
