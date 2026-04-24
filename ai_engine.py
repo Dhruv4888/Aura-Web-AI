@@ -18,7 +18,7 @@ class AuraAssistant:
         return bool(re.search(r'[\u0900-\u097F]', text))
 
     def clean_text_for_speech(self, text):
-        # Professional cleaning for faster TTS processing
+        # Cleaning for smooth professional voice delivery
         text = re.sub(r'\[WIKI_SEARCH:.*?\]', '', text)
         text = text.replace("$", "").replace("#", "").replace("*", "").replace("`", "")
         text = re.sub(r'\\text\{.*?\}', '', text) 
@@ -31,8 +31,8 @@ class AuraAssistant:
 
     async def _generate_voice(self, text, filename):
         selected_voice = "hi-IN-MadhurNeural" if self.is_hindi(text) else "en-IN-PrabhatNeural"
-        # Rate +12% for professional and crisp delivery
-        communicate = edge_tts.Communicate(text, selected_voice, rate="+12%", pitch="-1Hz")
+        # Rate set to +10% for a natural yet professional flow
+        communicate = edge_tts.Communicate(text, selected_voice, rate="+10%", pitch="-1Hz")
         await communicate.save(filename)
 
     def speak(self, text):
@@ -49,15 +49,15 @@ class AuraAssistant:
         except: pass
 
     def ask_stream(self, query, history):
-        # NEW: Optimized Prompt for Short & Professional Responses
-        base_prompt = """You are 'Gyan Setu', a professional academic mentor.
+        # BALANCED PROMPT: Descriptive but structured for speed
+        base_prompt = """You are 'Gyan Setu', a highly professional academic mentor for Class 1-12.
         Rules:
-        1. Answer ONLY school subjects (Class 1-12).
-        2. VERY IMPORTANT: Keep answers concise, clear, and to-the-point. No long essays.
-        3. Explain complex topics in maximum 2-3 short paragraphs or bullet points.
-        4. Tone: Professional and respectful (Use 'Aap'). 
-        5. Strictly avoid informal words like 'Beta' or 'Bachhe'.
-        6. If asked outside academics, say: 'Main keval shaikshik vishayon mein hi sahayata kar sakta hoon.'"""
+        1. Provide descriptive and detailed explanations for academic subjects.
+        2. Format the answer using bullet points and clear headings to make it structured.
+        3. Avoid unnecessary filler words to keep the voice generation efficient.
+        4. Tone: Academic, respectful, and formal (Use 'Aap'). No 'Beta' or 'Bachhe'.
+        5. If a topic is very large, explain the most important 4-5 points in detail.
+        6. Strictly refuse non-academic queries politely."""
         
         messages = [{"role": "system", "content": base_prompt}]
         messages.extend(history)
@@ -68,8 +68,8 @@ class AuraAssistant:
                 messages=messages, 
                 model=self.model,
                 stream=True,
-                temperature=0.3, # Focused and fast
-                max_tokens=350    # Short response limit for ultra-fast voice generation
+                temperature=0.5, 
+                max_tokens=700    # Increased limit for "Detail" while keeping it safe for TTS
             )
             for chunk in completion:
                 if chunk.choices[0].delta.content:
