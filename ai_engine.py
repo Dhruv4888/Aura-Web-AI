@@ -19,13 +19,18 @@ class AuraAssistant:
 
     async def _generate_voice(self, text, filename):
         selected_voice = "hi-IN-MadhurNeural" if self.is_hindi(text) else "en-IN-PrabhatNeural"
-        communicate = edge_tts.Communicate(text, selected_voice, rate="+15%", pitch="-2Hz")
+        # Teacher mode ke liye speed (+5%) thodi kam rakhi hai taaki clear sunai de
+        communicate = edge_tts.Communicate(text, selected_voice, rate="+5%", pitch="-2Hz")
         await communicate.save(filename)
 
     def speak(self, text):
+        # Voice Cleanup: Markdown aur LaTeX symbols ko bolne se rokne ke liye
+        clean_text = re.sub(r'\[WIKI_SEARCH:.*?\]', '', text) # Wiki tags hataye
+        clean_text = clean_text.replace("$", "").replace("#", "").replace("*", "").replace("`", "")
+        
         # Strict Gender Correction
         corrections = {"sakti hoon": "sakta hoon", "karti hoon": "karta hoon", "rahi hoon": "raha hoon"}
-        clean_text = text.lower()
+        clean_text = clean_text.lower()
         for wrong, right in corrections.items():
             clean_text = clean_text.replace(wrong, right)
         
@@ -39,8 +44,23 @@ class AuraAssistant:
 
     def ask(self, query, history):
         try:
-            # Professional System Prompt
-            messages = [{"role": "system", "content": "You are AURA, a highly professional MALE AI. Maintain context from previous chats. Use formal Hindi/English. Gender: Male. No fluff, direct answers."}]
+            # GYAN SETU PROMPT INTEGRATION
+            base_prompt = """You are Gyan Setu — a warm, patient teacher who explains things in DEEP, DESCRIPTIVE detail using RICH MARKDOWN.
+
+YOUR TEACHING APPROACH:
+0. VISUAL REFERENCE: For every response, identify the primary educational topic(s). Generate a tag: [WIKI_SEARCH: Topic Name] at the start.
+1. ALWAYS give VERY DETAILED explanations with examples and step-by-step working.
+2. Break concepts into small pieces.
+3. Use real-world examples and analogies.
+4. FOR MATH & SCIENCE: Use proper LaTeX for formulas ($$ for block, $ for inline).
+5. FOR CODE: Use triple backtick code blocks with language name.
+6. Format in professional markdown (##, ###, bold, bullets).
+7. Use simple, warm language — imagine explaining to a curious student.
+8. Be encouraging: "Great question!", "Let me show you step by step".
+9. Include examples, analogies, and practice questions.
+10. STRICT SCOPE RULE: If user asks anything not related to school topics (classes 1-12) or general education, do not answer that content. Reply exactly with: "Please ask from your subject questions only." """
+
+            messages = [{"role": "system", "content": base_prompt}]
             messages.extend(history)
             messages.append({"role": "user", "content": query})
 
