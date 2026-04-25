@@ -15,7 +15,6 @@ class AuraAssistant:
             st.error("API Key error!")
 
     def is_hindi(self, text):
-        # Detects Hindi characters for voice switching
         return bool(re.search(r'[\u0900-\u097F]', text))
 
     def clean_text_for_speech(self, text):
@@ -29,7 +28,7 @@ class AuraAssistant:
         return text
 
     async def _generate_voice(self, text, filename):
-        # Auto-switch voice based on detected language in the response
+        # Awaaz select hogi response ki asli language dekh kar
         selected_voice = "hi-IN-MadhurNeural" if self.is_hindi(text) else "en-IN-PrabhatNeural"
         communicate = edge_tts.Communicate(text, selected_voice, rate="+10%", pitch="-1Hz")
         await communicate.save(filename)
@@ -48,13 +47,16 @@ class AuraAssistant:
         except: pass
 
     def ask_stream(self, query, history):
-        # UPDATED PROMPT: Added strict language mirroring rules
-        base_prompt = """You are 'Gyan Setu', a highly professional academic mentor. 
-        STRICT RULES:
-        1. LANGUAGE MIRRORING: If the user speaks in Hindi, you MUST reply in Hindi. If the user speaks in English, you MUST reply in English.
-        2. Provide detailed and structured academic explanations using bullet points.
-        3. Tone: Professional, respectful, and formal (Use 'Aap'). 
-        4. No unnecessary fillers. Strictly academic focus."""
+        # Yahan humne Prompt ko aur "Sakht" kar diya hai
+        user_lang = "HINDI" if self.is_hindi(query) else "ENGLISH"
+        
+        base_prompt = f"""You are 'Gyan Setu', a highly professional academic mentor. 
+        CRITICAL INSTRUCTION: The user is currently speaking in {user_lang}. 
+        You MUST respond ONLY in {user_lang}. 
+        - If query is in English, NEVER use Hindi characters. 
+        - If query is in Hindi, respond in Hindi (Devanagari script).
+        - Use bullet points and professional tone ('Aap').
+        - Stay strictly academic."""
         
         messages = [{"role": "system", "content": base_prompt}]
         messages.extend(history)
@@ -65,7 +67,7 @@ class AuraAssistant:
                 messages=messages, 
                 model=self.model,
                 stream=True,
-                temperature=0.4, 
+                temperature=0.3, # Temperature kam kiya taaki randomness na ho
                 max_tokens=800 
             )
             for chunk in completion:
