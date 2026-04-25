@@ -2,6 +2,29 @@ import streamlit as st
 from ai_engine import aura
 from streamlit_mic_recorder import speech_to_text
 import time
+import streamlit.components.v1 as components
+
+# --- 1. ENGINEER'S JUGAAD: BROWSER-NATIVE TTS BRIDGE ---
+def st_speak(text, lang="hi-IN"):
+    # Clean text to avoid JS errors (removing quotes and newlines)
+    clean_text = text.replace('"', "'").replace("\n", " ")
+    js_code = f"""
+    <script>
+    if ('speechSynthesis' in window) {{
+        var msg = new SpeechSynthesisUtterance();
+        msg.text = "{clean_text}";
+        msg.lang = "{lang}";
+        msg.rate = 1.0;  // Speed adjust kar sakte ho
+        msg.pitch = 1.0; 
+        window.speechSynthesis.cancel(); // Purani awaaz band karne ke liye
+        window.speechSynthesis.speak(msg);
+    }} else {{
+        console.log("Browser not supported");
+    }}
+    </script>
+    """
+    # Invisible component to execute JS
+    components.html(js_code, height=0)
 
 # --- UI CONFIG ---
 st.set_page_config(page_title="Gyan Setu AI", page_icon="🎓", layout="centered")
@@ -51,7 +74,7 @@ st.markdown("""
 
 st.write("<h1>GYAN SETU</h1>", unsafe_allow_html=True)
 
-# Mic Tool (Set language to auto-detect or leave as en-IN for hybrid)
+# Mic Tool
 text = speech_to_text(
     start_prompt="TAP TO ASK", 
     stop_prompt="LISTENING...", 
@@ -68,7 +91,7 @@ if text:
         full_response = ""
         container = st.empty()
         
-        # Word-by-word Rendering for that "jaise-jaise" feel
+        # Word-by-word Rendering
         for chunk in aura.ask_stream(text, st.session_state.messages):
             full_response += chunk
             container.markdown(f'<div class="chat-container"><b>Gyan Setu:</b> {full_response}▌</div>', unsafe_allow_html=True)
@@ -80,7 +103,10 @@ if text:
         st.session_state.messages.append({"role": "user", "content": text})
         st.session_state.messages.append({"role": "assistant", "content": full_response})
         
-        # Voice Trigger
-        aura.speak(full_response)
+        # --- NEW BROWSER VOICE TRIGGER ---
+        # Awaaz select karo based on language
+        voice_lang = "hi-IN" if aura.is_hindi(full_response) else "en-US"
+        st_speak(full_response, voice_lang)
+
 else:
     st.markdown('<p style="text-align:center; color:#555; margin-top:20px;">Ready for your questions...</p>', unsafe_allow_html=True)
