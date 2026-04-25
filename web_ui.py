@@ -3,13 +3,13 @@ from ai_engine import aura
 from streamlit_mic_recorder import speech_to_text
 import time
 
-# --- 100% ORIGINAL UI CONFIG ---
+# --- UI CONFIG ---
 st.set_page_config(page_title="Gyan Setu AI", page_icon="🎓", layout="centered")
 
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
-# --- PURANA CSS (Orbitron Theme) ---
+# --- CSS (Orbitron Theme) ---
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap');
@@ -51,7 +51,7 @@ st.markdown("""
 
 st.write("<h1>GYAN SETU</h1>", unsafe_allow_html=True)
 
-# Mic Tool
+# Mic Tool (Set language to auto-detect or leave as en-IN for hybrid)
 text = speech_to_text(
     start_prompt="TAP TO ASK", 
     stop_prompt="LISTENING...", 
@@ -68,20 +68,19 @@ if text:
         full_response = ""
         container = st.empty()
         
-        # Word-by-word Rendering
+        # Word-by-word Rendering for that "jaise-jaise" feel
         for chunk in aura.ask_stream(text, st.session_state.messages):
             full_response += chunk
             container.markdown(f'<div class="chat-container"><b>Gyan Setu:</b> {full_response}▌</div>', unsafe_allow_html=True)
-            time.sleep(0.01)
         
-        # Final render without cursor
+        # Final render
         container.markdown(f'<div class="chat-container"><b>Gyan Setu:</b> {full_response}</div>', unsafe_allow_html=True)
         
         # Memory update
         st.session_state.messages.append({"role": "user", "content": text})
         st.session_state.messages.append({"role": "assistant", "content": full_response})
         
-        # Voice Trigger (Single Playback - No Overlap)
+        # Voice Trigger
         aura.speak(full_response)
 else:
     st.markdown('<p style="text-align:center; color:#555; margin-top:20px;">Ready for your questions...</p>', unsafe_allow_html=True)
