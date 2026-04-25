@@ -15,6 +15,7 @@ class AuraAssistant:
             st.error("API Key error!")
 
     def is_hindi(self, text):
+        # Improved Hindi detection (handles Devanagari range)
         return bool(re.search(r'[\u0900-\u097F]', text))
 
     def clean_text_for_speech(self, text):
@@ -28,9 +29,8 @@ class AuraAssistant:
         return text
 
     async def _generate_voice(self, text, filename):
-        # Awaaz select hogi response ki asli language dekh kar
         selected_voice = "hi-IN-MadhurNeural" if self.is_hindi(text) else "en-IN-PrabhatNeural"
-        communicate = edge_tts.Communicate(text, selected_voice, rate="+10%", pitch="-1Hz")
+        communicate = edge_tts.Communicate(text, selected_voice, rate="+12%", pitch="-1Hz")
         await communicate.save(filename)
 
     def speak(self, text):
@@ -47,27 +47,27 @@ class AuraAssistant:
         except: pass
 
     def ask_stream(self, query, history):
-        # Yahan humne Prompt ko aur "Sakht" kar diya hai
-        user_lang = "HINDI" if self.is_hindi(query) else "ENGLISH"
+        # Determine language once to force it
+        is_query_hindi = self.is_hindi(query)
+        forced_lang = "HINDI (Devanagari Script)" if is_query_hindi else "ENGLISH"
         
-        base_prompt = f"""You are 'Gyan Setu', a highly professional academic mentor. 
-        CRITICAL INSTRUCTION: The user is currently speaking in {user_lang}. 
-        You MUST respond ONLY in {user_lang}. 
-        - If query is in English, NEVER use Hindi characters. 
-        - If query is in Hindi, respond in Hindi (Devanagari script).
-        - Use bullet points and professional tone ('Aap').
-        - Stay strictly academic."""
+        # Super Strict Instruction
+        instruction = f"Respond ONLY in {forced_lang}. Start the first word in {forced_lang} directly. No greeting in other languages."
         
-        messages = [{"role": "system", "content": base_prompt}]
-        messages.extend(history)
-        messages.append({"role": "user", "content": query})
+        messages = [{"role": "system", "content": f"You are 'Gyan Setu', a professional academic mentor. {instruction} Use 'Aap' and bullet points."}]
+        
+        # Add history but keep it clean
+        messages.extend(history[-4:]) # Limit history to last 2 exchanges to avoid language drift
+        
+        messages.append({"role": "user", "content": f"{query} (Reply strictly in {forced_lang})"})
         
         try:
             completion = self.client.chat.completions.create(
                 messages=messages, 
                 model=self.model,
                 stream=True,
-                temperature=0.3, # Temperature kam kiya taaki randomness na ho
+                temperature=0.2, # Lower temperature = higher discipline
+                top_p=0.9,
                 max_tokens=800 
             )
             for chunk in completion:
