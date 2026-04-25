@@ -69,7 +69,8 @@ if text:
         container = st.empty()
         
         # Word-by-word Rendering
-        for chunk in aura.ask_stream(text, st.session_state.messages):
+        # Passing only last few messages to maintain language lock
+        for chunk in aura.ask_stream(text, st.session_state.messages[-2:]):
             full_response += chunk
             container.markdown(f'<div class="chat-container"><b>Gyan Setu:</b> {full_response}▌</div>', unsafe_allow_html=True)
         
@@ -80,7 +81,7 @@ if text:
         st.session_state.messages.append({"role": "user", "content": text})
         st.session_state.messages.append({"role": "assistant", "content": full_response})
         
-        # Voice Trigger (Reliable edge-tts)
+        # Voice Trigger
         aura.speak(full_response)
 else:
     st.markdown('<p style="text-align:center; color:#555; margin-top:20px;">Ready for your questions...</p>', unsafe_allow_html=True)
