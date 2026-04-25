@@ -15,23 +15,22 @@ class AuraAssistant:
             st.error("API Key error!")
 
     def is_hindi(self, text):
+        # Detects Hindi characters for voice switching
         return bool(re.search(r'[\u0900-\u097F]', text))
 
     def clean_text_for_speech(self, text):
-        # Cleaning for smooth professional voice delivery
         text = re.sub(r'\[WIKI_SEARCH:.*?\]', '', text)
         text = text.replace("$", "").replace("#", "").replace("*", "").replace("`", "")
         text = re.sub(r'\\text\{.*?\}', '', text) 
         
-        # Professional Gender Correction
         corrections = {"sakti hoon": "sakta hoon", "karti hoon": "karta hoon", "rahi hoon": "raha hoon"}
         for wrong, right in corrections.items():
             text = text.replace(wrong, right)
         return text
 
     async def _generate_voice(self, text, filename):
+        # Auto-switch voice based on detected language in the response
         selected_voice = "hi-IN-MadhurNeural" if self.is_hindi(text) else "en-IN-PrabhatNeural"
-        # Rate set to +10% for a natural yet professional flow
         communicate = edge_tts.Communicate(text, selected_voice, rate="+10%", pitch="-1Hz")
         await communicate.save(filename)
 
@@ -49,15 +48,13 @@ class AuraAssistant:
         except: pass
 
     def ask_stream(self, query, history):
-        # BALANCED PROMPT: Descriptive but structured for speed
-        base_prompt = """You are 'Gyan Setu', a highly professional academic mentor for Class 1-12.
-        Rules:
-        1. Provide descriptive and detailed explanations for academic subjects.
-        2. Format the answer using bullet points and clear headings to make it structured.
-        3. Avoid unnecessary filler words to keep the voice generation efficient.
-        4. Tone: Academic, respectful, and formal (Use 'Aap'). No 'Beta' or 'Bachhe'.
-        5. If a topic is very large, explain the most important 4-5 points in detail.
-        6. Strictly refuse non-academic queries politely."""
+        # UPDATED PROMPT: Added strict language mirroring rules
+        base_prompt = """You are 'Gyan Setu', a highly professional academic mentor. 
+        STRICT RULES:
+        1. LANGUAGE MIRRORING: If the user speaks in Hindi, you MUST reply in Hindi. If the user speaks in English, you MUST reply in English.
+        2. Provide detailed and structured academic explanations using bullet points.
+        3. Tone: Professional, respectful, and formal (Use 'Aap'). 
+        4. No unnecessary fillers. Strictly academic focus."""
         
         messages = [{"role": "system", "content": base_prompt}]
         messages.extend(history)
@@ -68,8 +65,8 @@ class AuraAssistant:
                 messages=messages, 
                 model=self.model,
                 stream=True,
-                temperature=0.5, 
-                max_tokens=700    # Increased limit for "Detail" while keeping it safe for TTS
+                temperature=0.4, 
+                max_tokens=800 
             )
             for chunk in completion:
                 if chunk.choices[0].delta.content:
