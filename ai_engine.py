@@ -15,7 +15,7 @@ class AuraAssistant:
             st.error("API Key error!")
 
     def is_hindi(self, text):
-        # Improved Hindi detection (handles Devanagari range)
+        # Detecting Devanagari script for strict language locking
         return bool(re.search(r'[\u0900-\u097F]', text))
 
     def clean_text_for_speech(self, text):
@@ -29,6 +29,7 @@ class AuraAssistant:
         return text
 
     async def _generate_voice(self, text, filename):
+        # Voice selection based on actual content of the generated text
         selected_voice = "hi-IN-MadhurNeural" if self.is_hindi(text) else "en-IN-PrabhatNeural"
         communicate = edge_tts.Communicate(text, selected_voice, rate="+12%", pitch="-1Hz")
         await communicate.save(filename)
@@ -47,28 +48,31 @@ class AuraAssistant:
         except: pass
 
     def ask_stream(self, query, history):
-        # Determine language once to force it
-        is_query_hindi = self.is_hindi(query)
-        forced_lang = "HINDI (Devanagari Script)" if is_query_hindi else "ENGLISH"
+        # Determine strict language lock
+        is_hindi_input = self.is_hindi(query)
+        forced_lang = "HINDI (Devanagari)" if is_hindi_input else "ENGLISH"
         
-        # Super Strict Instruction
-        instruction = f"Respond ONLY in {forced_lang}. Start the first word in {forced_lang} directly. No greeting in other languages."
+        # Professional Teacher System Instructions
+        system_instruction = f"""You are 'Gyan Setu', a formal Senior Academic Mentor.
+        STRICT RULES:
+        1. Current Language: {forced_lang}. You MUST speak 100% in {forced_lang}.
+        2. Tone: Professional, respectful (Use 'Aap'). No 'Hello/Hi' in mixed languages.
+        3. Structure: Use bullet points and clear headings.
+        4. Focus: Strictly academic. 
+        5. If input is Hindi characters, reply in Hindi script ONLY. If English, reply in English ONLY."""
         
-        messages = [{"role": "system", "content": f"You are 'Gyan Setu', a professional academic mentor. {instruction} Use 'Aap' and bullet points."}]
-        
-        # Add history but keep it clean
-        messages.extend(history[-4:]) # Limit history to last 2 exchanges to avoid language drift
-        
-        messages.append({"role": "user", "content": f"{query} (Reply strictly in {forced_lang})"})
+        # Crafting messages to prevent drift
+        messages = history[-2:] # Only keep very recent context to avoid language confusion
+        messages.insert(0, {"role": "system", "content": system_instruction})
+        messages.append({"role": "user", "content": f"Query: {query}\nTeacher, please answer this strictly in {forced_lang}."})
         
         try:
             completion = self.client.chat.completions.create(
                 messages=messages, 
                 model=self.model,
                 stream=True,
-                temperature=0.2, # Lower temperature = higher discipline
-                top_p=0.9,
-                max_tokens=800 
+                temperature=0.1, # Lowest possible for strict adherence
+                top_p=0.9
             )
             for chunk in completion:
                 if chunk.choices[0].delta.content:
