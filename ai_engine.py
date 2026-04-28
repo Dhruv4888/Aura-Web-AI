@@ -13,11 +13,9 @@ class AuraAssistant:
             st.error("API Key error! Please check your secrets.")
 
     def is_hindi(self, text):
-        # Strict detection for Devanagari script
         return bool(re.search(r'[\u0900-\u097F]', text))
 
     def ask_stream(self, query, history):
-        # Determine language based on query
         is_hindi_script = self.is_hindi(query)
         roman_hindi_words = ['kya', 'hai', 'kaise', 'batao', 'samjhao', 'kise', 'kyun']
         is_roman_hindi = any(word in query.lower() for word in roman_hindi_words)
@@ -32,10 +30,7 @@ class AuraAssistant:
         4. FORMAT: Keep sentences concise for better speech synchronization."""
 
         messages = [{"role": "system", "content": system_instruction}]
-        
-        # Keep minimal history for context
         messages.extend(history[-2:])
-        
         messages.append({"role": "user", "content": f"Student Question: {query}\n\n(Note: Reply strictly in {forced_lang}.)"})
         
         try:
@@ -51,7 +46,6 @@ class AuraAssistant:
                 content = chunk.choices[0].delta.content
                 if content:
                     yield content
-                    
                     # Sentence break detection for synchronization
                     if any(punc in content for punc in ['.', '?', '!', '।', '\n']):
                         yield "||SYNC_SPEECH||"
