@@ -1,7 +1,8 @@
 import streamlit as st
+import streamlit.components.v1 as components
 from ai_engine import aura
 from streamlit_mic_recorder import speech_to_text
-from streamlit_js_eval import streamlit_js_eval
+import time
 
 # --- UI CONFIG ---
 st.set_page_config(page_title="Gyan Setu AI", page_icon="🎓", layout="centered")
@@ -9,7 +10,7 @@ st.set_page_config(page_title="Gyan Setu AI", page_icon="🎓", layout="centered
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
-# --- CSS (Orbitron & Academic Theme) ---
+# --- CSS ---
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap');
@@ -53,17 +54,19 @@ st.markdown("""
 
 st.write("<h1>GYAN SETU</h1>", unsafe_allow_html=True)
 
-# JavaScript function to handle browser voice (Queued Speech)
-def speak_via_js(text, lang_code):
-    js_code = f"""
-    (function() {{
-        const msg = new SpeechSynthesisUtterance("{text}");
-        msg.lang = "{lang_code}";
-        msg.rate = 1.0;
-        window.speechSynthesis.speak(msg);
-    }})();
+# Function to inject invisible Speech HTML
+def speak_now(text, lang):
+    # Escape quotes for JS
+    safe_text = text.replace('"', '\\"').replace("'", "\\'")
+    html_code = f"""
+        <script>
+            var msg = new SpeechSynthesisUtterance("{safe_text}");
+            msg.lang = "{lang}";
+            window.speechSynthesis.speak(msg);
+        </script>
     """
-    streamlit_js_eval(code=js_code, key=f"speak_{hash(text)}")
+    # Key change: Use unique key for every sentence to force execution
+    components.html(html_code, height=0, width=0)
 
 # Mic Tool
 text = speech_to_text(
@@ -83,20 +86,20 @@ if text:
         sentence_buffer = ""
         container = st.empty()
         
-        # Detect language for browser voice
+        # Detect language once for the session
         is_hindi = aura.is_hindi(text)
         lang_code = "hi-IN" if is_hindi else "en-US"
         
         for chunk in aura.ask_stream(text, st.session_state.messages):
             if chunk == "||SYNC_SPEECH||":
                 if sentence_buffer.strip():
-                    # Clean special characters for JS string
-                    clean_chunk = sentence_buffer.replace('"', '').replace("'", "").strip()
-                    speak_via_js(clean_chunk, lang_code)
+                    # Play voice immediately for this sentence
+                    speak_now(sentence_buffer.strip(), lang_code)
                     sentence_buffer = ""
             else:
                 full_display_text += chunk
                 sentence_buffer += chunk
+                # Update text in UI
                 container.markdown(f'<div class="chat-container"><b>Gyan Setu:</b> {full_display_text}▌</div>', unsafe_allow_html=True)
         
         container.markdown(f'<div class="chat-container"><b>Gyan Setu:</b> {full_display_text}</div>', unsafe_allow_html=True)
