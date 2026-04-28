@@ -10,6 +10,7 @@ st.set_page_config(page_title="Gyan Setu AI", page_icon="🎓", layout="centered
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
+# --- CSS (Orbitron & Academic Theme) ---
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap');
@@ -54,6 +55,7 @@ st.markdown("""
 
 st.write("<h1>GYAN SETU</h1>", unsafe_allow_html=True)
 
+# Mic Tool for Input
 text = speech_to_text(
     start_prompt="TAP TO ASK", 
     stop_prompt="LISTENING...", 
@@ -64,29 +66,40 @@ text = speech_to_text(
 )
 
 if text:
+    # Display Student Question
     st.markdown(f'<div class="chat-container user-box"><b>Student:</b> {text}</div>', unsafe_allow_html=True)
     
     with st.spinner("Gyan Setu is analyzing..."):
         full_display_text = ""
         current_sentence = ""
         container = st.empty()
-        audio_placeholder = st.empty()
+        audio_placeholder = st.empty() # Placeholder for triggering audio tags
         
+        # Stream response from AI Engine
         for chunk in aura.ask_stream(text, st.session_state.messages):
             if chunk == "||SYNC_SIGNAL||":
+                # Sentence complete, trigger Madhur/Prabhat voice
                 if current_sentence.strip():
                     audio_b64 = aura.get_audio_data(current_sentence.strip())
                     if audio_b64:
+                        # Direct Audio Injection with dynamic sleep to reduce overlap
                         audio_tag = f'<audio autoplay="true" src="data:audio/mp3;base64,{audio_b64}">'
                         audio_placeholder.markdown(audio_tag, unsafe_allow_html=True)
-                        time.sleep(len(current_sentence) * 0.06) 
+                        
+                        # Buffer delay to allow the audio to play before next chunk
+                        time.sleep(len(current_sentence) * 0.07) 
+                    
                     current_sentence = "" 
             else:
                 full_display_text += chunk
                 current_sentence += chunk
+                # Live Rendering of text
                 container.markdown(f'<div class="chat-container"><b>Gyan Setu:</b> {full_display_text}▌</div>', unsafe_allow_html=True)
         
+        # Clean display after streaming ends
         container.markdown(f'<div class="chat-container"><b>Gyan Setu:</b> {full_display_text}</div>', unsafe_allow_html=True)
+        
+        # Save to chat history
         st.session_state.messages.append({"role": "user", "content": text})
         st.session_state.messages.append({"role": "assistant", "content": full_display_text})
 else:
