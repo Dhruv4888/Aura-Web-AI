@@ -2,7 +2,8 @@ import streamlit as st
 import streamlit.components.v1 as components
 from ai_engine import aura
 from streamlit_mic_recorder import speech_to_text
-import time
+import os
+import base64
 
 # --- UI CONFIG ---
 st.set_page_config(page_title="Gyan Setu AI", page_icon="🎓", layout="centered")
@@ -10,7 +11,7 @@ st.set_page_config(page_title="Gyan Setu AI", page_icon="🎓", layout="centered
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
-# --- CSS ---
+# --- CSS (No length cuts) ---
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap');
@@ -22,19 +23,6 @@ st.markdown("""
         font-size: 50px !important; 
         text-shadow: 0 0 20px #00fbff;
         margin-top: -50px;
-    }
-    button[data-testid="stBaseButton-secondary"] {
-        background-color: #00fbff !important;
-        color: #0b0e14 !important;
-        border-radius: 100px !important;
-        width: 180px !important;
-        height: 180px !important;
-        border: 8px solid #1a202c !important;
-        font-family: 'Orbitron', sans-serif !important;
-        font-weight: bold !important;
-        display: block !important;
-        margin: 0 auto !important;
-        box-shadow: 0 0 30px rgba(0, 251, 255, 0.4) !important;
     }
     .chat-container {
         background: #1a202c;
@@ -54,18 +42,30 @@ st.markdown("""
 
 st.write("<h1>GYAN SETU</h1>", unsafe_allow_html=True)
 
-# Function to inject invisible Speech HTML
-def speak_now(text, lang):
-    # Escape quotes for JS
-    safe_text = text.replace('"', '\\"').replace("'", "\\'")
+# Advanced Audio Queue Controller (JavaScript)
+def play_audio_sequence(audio_base64):
+    """Injects audio into a browser-side queue to prevent overlap"""
     html_code = f"""
         <script>
-            var msg = new SpeechSynthesisUtterance("{safe_text}");
-            msg.lang = "{lang}";
-            window.speechSynthesis.speak(msg);
+            if (!window.audioQueue) window.audioQueue = [];
+            if (!window.isAudioPlaying) window.isAudioPlaying = false;
+
+            function playNext() {{
+                if (window.audioQueue.length === 0) {{
+                    window.isAudioPlaying = false;
+                    return;
+                }}
+                window.isAudioPlaying = true;
+                let audioData = window.audioQueue.shift();
+                let audio = new Audio("data:audio/mp3;base64," + audioData);
+                audio.onended = playNext;
+                audio.play();
+            }}
+
+            window.audioQueue.push("{audio_base64}");
+            if (!window.isAudioPlaying) playNext();
         </script>
     """
-    # Key change: Use unique key for every sentence to force execution
     components.html(html_code, height=0, width=0)
 
 # Mic Tool
@@ -86,20 +86,21 @@ if text:
         sentence_buffer = ""
         container = st.empty()
         
-        # Detect language once for the session
-        is_hindi = aura.is_hindi(text)
-        lang_code = "hi-IN" if is_hindi else "en-US"
-        
         for chunk in aura.ask_stream(text, st.session_state.messages):
             if chunk == "||SYNC_SPEECH||":
                 if sentence_buffer.strip():
-                    # Play voice immediately for this sentence
-                    speak_now(sentence_buffer.strip(), lang_code)
+                    # 1. Generate High Quality Edge-TTS
+                    audio_file = aura.get_audio_link(sentence_buffer.strip())
+                    if audio_file:
+                        with open(audio_file, "rb") as f:
+                            data = base64.b64encode(f.read()).decode()
+                            # 2. Push to JS Queue for seamless play
+                            play_audio_sequence(data)
+                        os.remove(audio_file)
                     sentence_buffer = ""
             else:
                 full_display_text += chunk
                 sentence_buffer += chunk
-                # Update text in UI
                 container.markdown(f'<div class="chat-container"><b>Gyan Setu:</b> {full_display_text}▌</div>', unsafe_allow_html=True)
         
         container.markdown(f'<div class="chat-container"><b>Gyan Setu:</b> {full_display_text}</div>', unsafe_allow_html=True)
@@ -107,4 +108,4 @@ if text:
         st.session_state.messages.append({"role": "user", "content": text})
         st.session_state.messages.append({"role": "assistant", "content": full_display_text})
 else:
-    st.markdown('<p style="text-align:center; color:#555; margin-top:20px;">Ready for your academic questions...</p>', unsafe_allow_html=True)
+    st.markdown('<p style="text-align:center; color:#555; margin-top:20px;">Ready for your academic queries...</p>', unsafe_allow_html=True)
