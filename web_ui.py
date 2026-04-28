@@ -1,7 +1,7 @@
 import streamlit as st
 from ai_engine import aura
 from streamlit_mic_recorder import speech_to_text
-import time
+from streamlit_js_eval import streamlit_js_eval
 
 # --- UI CONFIG ---
 st.set_page_config(page_title="Gyan Setu AI", page_icon="🎓", layout="centered")
@@ -9,7 +9,7 @@ st.set_page_config(page_title="Gyan Setu AI", page_icon="🎓", layout="centered
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
-# --- CSS (Bigger Code, No cuts) ---
+# --- CSS (Orbitron & Academic Theme) ---
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap');
@@ -53,6 +53,19 @@ st.markdown("""
 
 st.write("<h1>GYAN SETU</h1>", unsafe_allow_html=True)
 
+# JavaScript function to handle browser voice (Queued Speech)
+def speak_via_js(text, lang_code):
+    js_code = f"""
+    (function() {{
+        const msg = new SpeechSynthesisUtterance("{text}");
+        msg.lang = "{lang_code}";
+        msg.rate = 1.0;
+        window.speechSynthesis.speak(msg);
+    }})();
+    """
+    streamlit_js_eval(code=js_code, key=f"speak_{hash(text)}")
+
+# Mic Tool
 text = speech_to_text(
     start_prompt="TAP TO ASK", 
     stop_prompt="LISTENING...", 
@@ -67,27 +80,28 @@ if text:
     
     with st.spinner("Gyan Setu is analyzing..."):
         full_display_text = ""
-        current_sentence_to_speak = ""
+        sentence_buffer = ""
         container = st.empty()
         
-        # Sir's Logic Implementation
+        # Detect language for browser voice
+        is_hindi = aura.is_hindi(text)
+        lang_code = "hi-IN" if is_hindi else "en-US"
+        
         for chunk in aura.ask_stream(text, st.session_state.messages):
-            
-            if chunk == "||SENTENCE_COMPLETE||":
-                # Sentence khatam, ab awaaz bajao bina ruko
-                if current_sentence_to_speak.strip():
-                    aura.speak(current_sentence_to_speak)
-                    current_sentence_to_speak = "" # Reset for next sentence
+            if chunk == "||SYNC_SPEECH||":
+                if sentence_buffer.strip():
+                    # Clean special characters for JS string
+                    clean_chunk = sentence_buffer.replace('"', '').replace("'", "").strip()
+                    speak_via_js(clean_chunk, lang_code)
+                    sentence_buffer = ""
             else:
                 full_display_text += chunk
-                current_sentence_to_speak += chunk
-                # Text ko render karte raho
+                sentence_buffer += chunk
                 container.markdown(f'<div class="chat-container"><b>Gyan Setu:</b> {full_display_text}▌</div>', unsafe_allow_html=True)
         
-        # Final render
         container.markdown(f'<div class="chat-container"><b>Gyan Setu:</b> {full_display_text}</div>', unsafe_allow_html=True)
         
         st.session_state.messages.append({"role": "user", "content": text})
         st.session_state.messages.append({"role": "assistant", "content": full_display_text})
 else:
-    st.markdown('<p style="text-align:center; color:#555; margin-top:20px;">I am ready for your academic queries...</p>', unsafe_allow_html=True)
+    st.markdown('<p style="text-align:center; color:#555; margin-top:20px;">Ready for your academic questions...</p>', unsafe_allow_html=True)
