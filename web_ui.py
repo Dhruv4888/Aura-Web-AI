@@ -1,8 +1,8 @@
 import streamlit as st
-import streamlit.components.v1 as components
 from ai_engine import aura
 from streamlit_mic_recorder import speech_to_text
 import time
+import base64
 
 # --- UI CONFIG ---
 st.set_page_config(page_title="Gyan Setu AI", page_icon="🎓", layout="centered")
@@ -10,7 +10,7 @@ st.set_page_config(page_title="Gyan Setu AI", page_icon="🎓", layout="centered
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
-# --- CSS (Bigger Code, Full Length) ---
+# --- CSS (Strict Academic Theme) ---
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap');
@@ -55,63 +55,7 @@ st.markdown("""
 
 st.write("<h1>GYAN SETU</h1>", unsafe_allow_html=True)
 
-# --- JAVASCRIPT AUDIO QUEUE ENGINE ---
-# Ye script browser mein ek baar load hogi aur overlap ko control karegi
-def inject_audio_queue_script():
-    js_engine = """
-    <script>
-    if (!window.audioQueue) {
-        window.audioQueue = [];
-        window.isAudioPlaying = false;
-        console.log("Audio Queue Engine Initialized");
-    }
-
-    function playNextInQueue() {
-        if (window.audioQueue.length === 0) {
-            window.isAudioPlaying = false;
-            return;
-        }
-
-        window.isAudioPlaying = true;
-        let base64Data = window.audioQueue.shift();
-        let audio = new Audio("data:audio/mp3;base64," + base64Data);
-        
-        audio.onended = function() {
-            playNextInQueue();
-        };
-
-        audio.play().catch(e => {
-            console.log("Audio play error:", e);
-            playNextInQueue();
-        });
-    }
-
-    window.addToQueue = function(base64Data) {
-        window.audioQueue.push(base64Data);
-        if (!window.isAudioPlaying) {
-            playNextInQueue();
-        }
-    }
-    </script>
-    """
-    components.html(js_engine, height=0, width=0)
-
-# Always keep the script active
-inject_audio_queue_script()
-
-def trigger_voice_in_queue(base64_data):
-    # Base64 ko JavaScript function mein pass karna
-    unique_key = f"voice_{time.time()}"
-    js_trigger = f"""
-    <script>
-        if (window.addToQueue) {{
-            window.addToQueue("{base64_data}");
-        }}
-    </script>
-    """
-    components.html(js_trigger, height=0, width=0)
-
-# --- MAIN APP LOGIC ---
+# Mic Tool
 text = speech_to_text(
     start_prompt="TAP TO ASK", 
     stop_prompt="LISTENING...", 
@@ -128,27 +72,34 @@ if text:
         full_display_text = ""
         current_sentence = ""
         container = st.empty()
+        audio_placeholder = st.empty() # Audio ke liye alag jagah
         
-        # AI Se chunks nikalna
+        # AI Engine Calling
         for chunk in aura.ask_stream(text, st.session_state.messages):
             if chunk == "||SYNC_SIGNAL||":
-                # Ek sentence poora hua, ab iska audio background mein generate karke queue mein daalo
                 if current_sentence.strip():
+                    # Audio generate karna (Madhur/Prabhat)
                     audio_b64 = aura.get_audio_data(current_sentence.strip())
                     if audio_b64:
-                        trigger_voice_in_queue(audio_b64)
-                    current_sentence = "" # Reset buffer for next sentence
+                        # Direct Audio Trigger with autoplay
+                        audio_tag = f'<audio autoplay="true" src="data:audio/mp3;base64,{audio_b64}">'
+                        audio_placeholder.markdown(audio_tag, unsafe_allow_html=True)
+                        
+                        # Chota sa pause taaki overlapping kam ho (0.5 sec)
+                        # Ye sentence ki length ke hisaab se adjust hota hai
+                        time.sleep(len(current_sentence) * 0.05) 
+                    
+                    current_sentence = "" 
             else:
                 full_display_text += chunk
                 current_sentence += chunk
-                # Live rendering in UI
+                # Live Rendering
                 container.markdown(f'<div class="chat-container"><b>Gyan Setu:</b> {full_display_text}▌</div>', unsafe_allow_html=True)
         
-        # Final render
+        # Final cleanup and display
         container.markdown(f'<div class="chat-container"><b>Gyan Setu:</b> {full_display_text}</div>', unsafe_allow_html=True)
         
-        # Memory Update
         st.session_state.messages.append({"role": "user", "content": text})
         st.session_state.messages.append({"role": "assistant", "content": full_display_text})
 else:
-    st.markdown('<p style="text-align:center; color:#555; margin-top:20px;">Ready for your academic questions...</p>', unsafe_allow_html=True)
+    st.markdown('<p style="text-align:center; color:#555; margin-top:20px;">Ready for your academic queries...</p>', unsafe_allow_html=True)
