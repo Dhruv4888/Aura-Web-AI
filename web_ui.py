@@ -6,11 +6,10 @@ import time
 # --- UI CONFIG ---
 st.set_page_config(page_title="Gyan Setu AI", page_icon="🎓", layout="centered")
 
-# Initialize session state for chat history
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
-# --- CSS (Orbitron & Academic Theme) ---
+# --- CSS (Bigger Code, No cuts) ---
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap');
@@ -54,7 +53,6 @@ st.markdown("""
 
 st.write("<h1>GYAN SETU</h1>", unsafe_allow_html=True)
 
-# Mic Tool (Hybrid language detection starts here)
 text = speech_to_text(
     start_prompt="TAP TO ASK", 
     stop_prompt="LISTENING...", 
@@ -65,28 +63,31 @@ text = speech_to_text(
 )
 
 if text:
-    # User Message Display
     st.markdown(f'<div class="chat-container user-box"><b>Student:</b> {text}</div>', unsafe_allow_html=True)
     
     with st.spinner("Gyan Setu is analyzing..."):
-        full_response = ""
+        full_display_text = ""
+        current_sentence_to_speak = ""
         container = st.empty()
         
-        # Word-by-word Rendering
-        # AI Engine is called with the current history
+        # Sir's Logic Implementation
         for chunk in aura.ask_stream(text, st.session_state.messages):
-            full_response += chunk
-            # Stream rendering with cursor
-            container.markdown(f'<div class="chat-container"><b>Gyan Setu:</b> {full_response}▌</div>', unsafe_allow_html=True)
+            
+            if chunk == "||SENTENCE_COMPLETE||":
+                # Sentence khatam, ab awaaz bajao bina ruko
+                if current_sentence_to_speak.strip():
+                    aura.speak(current_sentence_to_speak)
+                    current_sentence_to_speak = "" # Reset for next sentence
+            else:
+                full_display_text += chunk
+                current_sentence_to_speak += chunk
+                # Text ko render karte raho
+                container.markdown(f'<div class="chat-container"><b>Gyan Setu:</b> {full_display_text}▌</div>', unsafe_allow_html=True)
         
-        # Final render without cursor
-        container.markdown(f'<div class="chat-container"><b>Gyan Setu:</b> {full_response}</div>', unsafe_allow_html=True)
+        # Final render
+        container.markdown(f'<div class="chat-container"><b>Gyan Setu:</b> {full_display_text}</div>', unsafe_allow_html=True)
         
-        # Memory update (Keep it clean for next turn)
         st.session_state.messages.append({"role": "user", "content": text})
-        st.session_state.messages.append({"role": "assistant", "content": full_response})
-        
-        # Voice Trigger (Reliable edge-tts)
-        aura.speak(full_response)
+        st.session_state.messages.append({"role": "assistant", "content": full_display_text})
 else:
     st.markdown('<p style="text-align:center; color:#555; margin-top:20px;">I am ready for your academic queries...</p>', unsafe_allow_html=True)
