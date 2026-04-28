@@ -10,7 +10,6 @@ st.set_page_config(page_title="Gyan Setu AI", page_icon="🎓", layout="centered
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
-# --- CSS (Strict Academic Theme) ---
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap');
@@ -55,7 +54,6 @@ st.markdown("""
 
 st.write("<h1>GYAN SETU</h1>", unsafe_allow_html=True)
 
-# Mic Tool
 text = speech_to_text(
     start_prompt="TAP TO ASK", 
     stop_prompt="LISTENING...", 
@@ -72,34 +70,24 @@ if text:
         full_display_text = ""
         current_sentence = ""
         container = st.empty()
-        audio_placeholder = st.empty() # Audio ke liye alag jagah
+        audio_placeholder = st.empty()
         
-        # AI Engine Calling
         for chunk in aura.ask_stream(text, st.session_state.messages):
             if chunk == "||SYNC_SIGNAL||":
                 if current_sentence.strip():
-                    # Audio generate karna (Madhur/Prabhat)
                     audio_b64 = aura.get_audio_data(current_sentence.strip())
                     if audio_b64:
-                        # Direct Audio Trigger with autoplay
                         audio_tag = f'<audio autoplay="true" src="data:audio/mp3;base64,{audio_b64}">'
                         audio_placeholder.markdown(audio_tag, unsafe_allow_html=True)
-                        
-                        # Chota sa pause taaki overlapping kam ho (0.5 sec)
-                        # Ye sentence ki length ke hisaab se adjust hota hai
-                        time.sleep(len(current_sentence) * 0.05) 
-                    
+                        time.sleep(len(current_sentence) * 0.06) 
                     current_sentence = "" 
             else:
                 full_display_text += chunk
                 current_sentence += chunk
-                # Live Rendering
                 container.markdown(f'<div class="chat-container"><b>Gyan Setu:</b> {full_display_text}▌</div>', unsafe_allow_html=True)
         
-        # Final cleanup and display
         container.markdown(f'<div class="chat-container"><b>Gyan Setu:</b> {full_display_text}</div>', unsafe_allow_html=True)
-        
         st.session_state.messages.append({"role": "user", "content": text})
         st.session_state.messages.append({"role": "assistant", "content": full_display_text})
 else:
-    st.markdown('<p style="text-align:center; color:#555; margin-top:20px;">Ready for your academic queries...</p>', unsafe_allow_html=True)
+    st.markdown('<p style="text-align:center; color:#555; margin-top:20px;">Ready for your academic questions...</p>', unsafe_allow_html=True)
