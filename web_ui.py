@@ -4,121 +4,156 @@ from streamlit_mic_recorder import speech_to_text
 import time
 import base64
 
-# --- ACADEMIC CORE CONFIG ---
-st.set_page_config(page_title="Gyan Setu AI", page_icon="🎓", layout="centered")
+# --- MASTER ACADEMIC CONFIGURATION ---
+st.set_page_config(
+    page_title="Gyan Setu AI - Mentor", 
+    page_icon="🎓", 
+    layout="centered",
+    initial_sidebar_state="collapsed"
+)
 
-# State Management for Session Continuity
+# Deep Session Memory for Chat Continuity
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
-# --- CSS (High-Performance Scientific Interface) ---
+# --- HIGH-END FUTURISTIC CSS (EXTENDED) ---
 st.markdown("""
     <style>
-    @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Rajdhani:wght@500;600&display=swap');
-    .stApp { background-color: #0b0e14 !important; }
+    @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Rajdhani:wght@500;600;700&display=swap');
+    
+    /* Main Background with Deep Tech Theme */
+    .stApp { 
+        background: radial-gradient(circle at center, #10141d 0%, #0b0e14 100%) !important; 
+    }
+    
+    /* Glowing Title Styling */
     h1 { 
         color: #00fbff !important; 
         font-family: 'Orbitron', sans-serif !important; 
         text-align: center !important; 
-        font-size: 55px !important; 
-        text-shadow: 0 0 30px #00fbff;
-        margin-top: -70px;
-        letter-spacing: 6px;
+        font-size: 60px !important; 
+        text-shadow: 0 0 35px #00fbff, 0 0 10px rgba(0, 251, 255, 0.5);
+        margin-top: -80px;
+        letter-spacing: 8px;
+        text-transform: uppercase;
     }
-    /* Voice Interface Hub */
+    
+    /* Advanced Mic Hub Button Customization */
     button[data-testid="stBaseButton-secondary"] {
         background-color: #00fbff !important;
         color: #0b0e14 !important;
         border-radius: 50% !important;
-        width: 150px !important;
-        height: 150px !important;
-        border: 10px solid #1a202c !important;
+        width: 160px !important;
+        height: 160px !important;
+        border: 12px solid #1a202c !important;
         font-family: 'Orbitron', sans-serif !important;
-        font-weight: bold !important;
+        font-weight: 900 !important;
         margin: 0 auto !important;
         display: flex !important;
-        box-shadow: 0 0 50px rgba(0, 251, 255, 0.4) !important;
-        transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.3s ease;
+        justify-content: center !important;
+        align-items: center !important;
+        box-shadow: 0 0 55px rgba(0, 251, 255, 0.35) !important;
+        transition: all 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+        cursor: pointer;
     }
+    
     button[data-testid="stBaseButton-secondary"]:hover {
-        transform: scale(1.08);
-        box-shadow: 0 0 70px rgba(0, 251, 255, 0.6) !important;
+        transform: scale(1.1) rotate(3deg);
+        box-shadow: 0 0 85px rgba(0, 251, 255, 0.6) !important;
+        border-color: #00fbff !important;
     }
+    
+    /* Professional Chat Container Styling */
     .chat-container {
-        background: #1a202c;
-        padding: 35px;
-        border-radius: 20px;
-        border-left: 10px solid #00fbff;
-        color: #f8fafc;
-        margin-top: 30px;
+        background: rgba(26, 32, 44, 0.95);
+        padding: 40px;
+        border-radius: 25px;
+        border-left: 12px solid #00fbff;
+        color: #f1f5f9;
+        margin-top: 35px;
         font-family: 'Rajdhani', sans-serif;
-        line-height: 1.9;
-        font-size: 24px;
-        box-shadow: 15px 15px 40px rgba(0,0,0,0.6);
+        line-height: 1.95;
+        font-size: 26px;
+        box-shadow: 20px 20px 50px rgba(0,0,0,0.7);
+        border-right: 1px solid rgba(0, 251, 255, 0.1);
+        backdrop-filter: blur(10px);
     }
-    .user-box { border-left: 10px solid #cbd5e1; background: #2d3748; }
+    
+    .user-box { 
+        border-left: 12px solid #e2e8f0; 
+        background: rgba(45, 55, 72, 0.9); 
+        box-shadow: 10px 10px 30px rgba(0,0,0,0.4);
+    }
+    
+    /* Clean UI Overrides */
     #MainMenu, header, footer {visibility: hidden;}
     div[data-testid="stDecoration"] {display:none;}
+    
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar { width: 8px; }
+    ::-webkit-scrollbar-track { background: #0b0e14; }
+    ::-webkit-scrollbar-thumb { background: #00fbff; border-radius: 10px; }
     </style>
     """, unsafe_allow_html=True)
 
 st.write("<h1>GYAN SETU</h1>", unsafe_allow_html=True)
 
-def play_vocal_output(b64_data):
-    """Injects a hidden audio component that plays once per sentence trigger."""
-    audio_tag = f"""
+# Functional Audio Trigger Component
+def execute_voice_block(b64_data):
+    """Generates an isolated HTML audio instance to prevent parallel execution."""
+    audio_markup = f"""
         <audio autoplay="true" style="display:none;">
             <source src="data:audio/mp3;base64,{b64_data}" type="audio/mp3">
         </audio>
     """
-    st.components.v1.html(audio_tag, height=0)
+    st.components.v1.html(audio_markup, height=0)
 
-# Main Interaction Entry Point
-captured_speech = speech_to_text(
+# Voice Input Interface
+voice_query = speech_to_text(
     start_prompt="TAP TO SPEAK", 
-    stop_prompt="ANALYZING VOICE...", 
+    stop_prompt="GYAN SETU IS LISTENING...", 
     language='en-IN', 
     use_container_width=True,
     just_once=True, 
-    key='gyansetu_master_v7'
+    key='gyansetu_v8_final'
 )
 
-if captured_speech:
-    # Display the student's prompt with distinct formatting
-    st.markdown(f'<div class="chat-container user-box"><b>Student:</b> {captured_speech}</div>', unsafe_allow_html=True)
+if voice_query:
+    # Displaying user query with academic mentor formatting
+    st.markdown(f'<div class="chat-container user-box"><b>Student:</b> {voice_query}</div>', unsafe_allow_html=True)
     
-    with st.spinner("Gyan Setu is processing your academic query..."):
-        full_text_stream = ""
-        sentence_accumulator = ""
-        display_box = st.empty()
+    with st.spinner("Processing Knowledge Base..."):
+        full_transcript = ""
+        current_sentence_chunk = ""
+        ui_renderer = st.empty()
         
-        # Execute streaming logic with integrated vocal synchronization
-        for fragment in aura.ask_stream(captured_speech, st.session_state.messages):
-            if fragment == "||SYNC_SIGNAL||":
-                if sentence_accumulator.strip():
-                    # Generate and trigger audio for the current block
-                    voice_b64 = aura.get_audio_data(sentence_accumulator.strip())
-                    if voice_b64:
-                        play_vocal_output(voice_b64)
+        # Real-time Stream Handling with Hard-Sync Logic
+        for response_chunk in aura.ask_stream(voice_query, st.session_state.messages):
+            if response_chunk == "||SYNC_SIGNAL||":
+                if current_sentence_chunk.strip():
+                    # Process current chunk into vocal output
+                    voice_payload = aura.get_audio_data(current_sentence_chunk.strip())
+                    if voice_payload:
+                        execute_voice_block(voice_payload)
                         
-                        # ADVANCED SYNC PROTECTION:
-                        # Character-length based delay optimized for +15% TTS speed.
-                        # Added 0.45s static overhead to prevent overlaps on math symbols.
-                        vocal_delay = (len(sentence_accumulator) * 0.062) + 0.45
-                        time.sleep(vocal_delay)
+                        # ANTI-OVERLAP CALIBRATION:
+                        # Character length (len) * delay (0.075) + extra 0.6s buffer for math symbols
+                        # This ensures the browser has cleared the audio buffer before the next play.
+                        vocal_duration_buffer = (len(current_sentence_chunk) * 0.075) + 0.6
+                        time.sleep(vocal_duration_buffer)
                     
-                    sentence_accumulator = "" 
+                    current_sentence_chunk = "" 
             else:
-                full_text_stream += fragment
-                sentence_accumulator += fragment
-                # Dynamic visual rendering with an active cursor effect
-                display_box.markdown(f'<div class="chat-container"><b>Gyan Setu:</b> {full_text_stream}█</div>', unsafe_allow_html=True)
+                full_transcript += response_chunk
+                current_sentence_chunk += response_chunk
+                # UI rendering with futuristic typing indicator
+                ui_renderer.markdown(f'<div class="chat-container"><b>Gyan Setu:</b> {full_transcript}▒</div>', unsafe_allow_html=True)
         
-        # Final render to remove the cursor and stabilize output
-        display_box.markdown(f'<div class="chat-container"><b>Gyan Setu:</b> {full_text_stream}</div>', unsafe_allow_html=True)
+        # Final UI update for clarity
+        ui_renderer.markdown(f'<div class="chat-container"><b>Gyan Setu:</b> {full_transcript}</div>', unsafe_allow_html=True)
         
-        # Persistence: Updating the session state for historical context
-        st.session_state.messages.append({"role": "user", "content": captured_speech})
-        st.session_state.messages.append({"role": "assistant", "content": full_text_stream})
+        # State archival
+        st.session_state.messages.append({"role": "user", "content": voice_query})
+        st.session_state.messages.append({"role": "assistant", "content": full_transcript})
 else:
-    st.markdown('<p style="text-align:center; color:#64748b; font-family:Orbitron; margin-top:50px; font-weight:bold;">// AWAITING STUDENT INPUT //</p>', unsafe_allow_html=True)
+    st.markdown('<p style="text-align:center; color:#475569; font-family:Orbitron; margin-top:60px; font-weight:bold; letter-spacing:3px;">SYSTEM ACTIVE // STANDBY FOR INSTRUCTION</p>', unsafe_allow_html=True)
