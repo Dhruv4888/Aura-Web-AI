@@ -77,7 +77,7 @@ def trigger_vocal_sync(b64_data):
 
 # Input Section (Voice Focused)
 input_text = speech_to_text(
-    start_prompt="INSTRUCT GYAN SETU", 
+    start_prompt="TAP TO SPEAK", 
     stop_prompt="CAPTURING AUDIO...", 
     language='en-IN', 
     use_container_width=True,
