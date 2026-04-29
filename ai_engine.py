@@ -9,12 +9,7 @@ import base64
 class AuraAssistant:
     def __init__(self):
         self.model = "llama-3.3-70b-versatile"
-        # API Key check
-        if "GROQ_API_KEY" in st.secrets:
-            self.api_key = st.secrets["GROQ_API_KEY"]
-        else:
-            self.api_key = os.environ.get("GROQ_API_KEY", "")
-        
+        self.api_key = st.secrets.get("GROQ_API_KEY") or os.environ.get("GROQ_API_KEY", "")
         if self.api_key:
             self.client = Groq(api_key=self.api_key)
 
@@ -22,8 +17,9 @@ class AuraAssistant:
         return bool(re.search(r'[\u0900-\u097F]', text))
 
     async def _generate_voice_bytes(self, text):
+        # Hindi query -> Hindi voice, English query -> English voice
         selected_voice = "hi-IN-MadhurNeural" if self.is_hindi(text) else "en-IN-PrabhatNeural"
-        communicate = edge_tts.Communicate(text, selected_voice, rate="+15%")
+        communicate = edge_tts.Communicate(text, selected_voice, rate="+20%")
         audio_data = b""
         async for chunk in communicate.stream():
             if chunk["type"] == "audio":
@@ -40,12 +36,13 @@ class AuraAssistant:
         except: return None
 
     def ask_stream(self, query, history):
-        is_hindi_in = self.is_hindi(query)
-        forced_lang = "HINDI (Devanagari script)" if is_hindi_in else "ENGLISH"
-        system_instruction = f"You are 'Gyan Setu'. Respond strictly in {forced_lang}. Short sentences only. End with '.' or '।'."
+        is_hindi = self.is_hindi(query)
+        # Strict language instruction for cleaner pronunciation
+        lang_gate = "Hindi script only" if is_hindi else "English only"
+        system_msg = f"You are Gyan Setu. Answer in {lang_gate}. Max 2 short sentences. Use '.' or '।'."
         
-        messages = [{"role": "system", "content": system_instruction}]
-        for msg in history[-2:]: messages.append(msg)
+        messages = [{"role": "system", "content": system_msg}]
+        messages.extend(history[-2:])
         messages.append({"role": "user", "content": query})
 
         completion = self.client.chat.completions.create(
@@ -55,8 +52,7 @@ class AuraAssistant:
             content = chunk.choices[0].delta.content
             if content:
                 yield content
-                if any(mark in content for mark in ['.', '!', '?', '।', '\n']):
-                    yield "||SYNC_SIGNAL||"
+                if any(mark in content for mark in ['.', '!', '?', '।']):
+                    yield "||SYNC||"
 
-# CRITICAL: Ye line class ke bahar honi chahiye
 aura = AuraAssistant()
