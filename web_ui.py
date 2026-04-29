@@ -19,7 +19,6 @@ if "messages" not in st.session_state:
     st.session_state.messages = []
 
 # --- THE FUTURISTIC ORBITRON INTERFACE (UI INTEGRITY) ---
-# Keeping the UI exactly as per your preference, but ensuring it supports the logic.
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@500;600;700&display=swap');
@@ -67,7 +66,7 @@ st.markdown("""
         border-color: #ffffff !important;
     }
     
-    /* Mentor Output Box: High Readability for Physics/Math */
+    /* Mentor Output Box: High Readability */
     .chat-container {
         background: rgba(15, 23, 42, 0.95);
         padding: 50px;
@@ -106,12 +105,9 @@ st.markdown("""
 st.write("<h1>GYAN SETU</h1>", unsafe_allow_html=True)
 
 # --- THE BLOCKING SYNC MECHANISM ---
-# This function creates a virtual barrier. It ensures that the browser 
-# processes the audio chunk in isolation.
 def inject_isolated_audio(b64_data, chunk_id):
     """
-    Directly injects the audio data into the DOM with a unique identifier.
-    Uses an 'auto-destroy' logic to clear the buffer.
+    Injects audio and ensures the browser handles it as a distinct stream.
     """
     audio_markup = f"""
         <div id="vocal-unit-{chunk_id}" style="display:none;">
@@ -123,18 +119,16 @@ def inject_isolated_audio(b64_data, chunk_id):
     st.components.v1.html(audio_markup, height=0)
 
 # --- GLOBAL VOICE ACQUISITION ---
-# Initiating the capture of academic inquiries.
 query_voice = speech_to_text(
     start_prompt="START ACADEMIC SESSION", 
     stop_prompt="GYAN SETU IS PROCESSING...", 
     language='en-IN', 
     use_container_width=True,
     just_once=True, 
-    key='core_engine_v11'
+    key='core_engine_v12'
 )
 
 if query_voice:
-    # Render user query with bold mentor styling.
     st.markdown(f'<div class="chat-container user-box"><b>Student:</b> {query_voice}</div>', unsafe_allow_html=True)
     
     with st.spinner("Synthesizing solution..."):
@@ -143,60 +137,56 @@ if query_voice:
         ui_anchor = st.empty()
         audio_counter = 0
         
-        # LOGIC GATE: Iterating through the AI's thought process.
+        # LOGIC GATE: Precise streaming with subject-aware pauses.
         for text_fragment in aura.ask_stream(query_voice, st.session_state.messages):
             if text_fragment == "||SYNC_SIGNAL||":
                 if chunk_buffer.strip():
                     audio_counter += 1
                     
-                    # Convert the current step of the equation into vocal data.
                     vocal_hex = aura.get_audio_data(chunk_buffer.strip())
                     
                     if vocal_hex:
                         inject_isolated_audio(vocal_hex, audio_counter)
                         
-                        # --- CRITICAL ANTI-OVERLAP CALCULATION ---
-                        # We identify the 'weight' of the text to prevent overlap.
-                        # Physics and Math equations contain high-density symbols.
+                        # --- OPTIMIZED ANTI-OVERLAP CALCULATION ---
+                        # Faster processing means we need tighter, more accurate wait times.
                         
-                        # Complexity Analysis:
-                        complexity_score = len(re.findall(r'[0-9\+\-\=\^\/x²³\(\)]', chunk_buffer))
+                        # Identifying math density for dynamic wait.
+                        math_symbols = re.findall(r'[0-9\+\-\=\^\/x²³\(\)]', chunk_buffer)
+                        complexity_score = len(math_symbols)
                         text_length = len(chunk_buffer)
                         
-                        # BASE TIMING: Standard text needs ~0.08s per char.
-                        # COMPLEXITY PENALTY: Every math symbol adds extra 0.25s of breathing space.
-                        timing_multiplier = 0.085
-                        extra_symbol_pause = complexity_score * 0.28
+                        # NEW SPEED TUNING:
+                        # Character multiplier reduced for speed, but symbol pause remains stable.
+                        timing_multiplier = 0.082 
+                        extra_symbol_pause = complexity_score * 0.25
                         
-                        # Final Delay = (Length * Speed) + Math Overhead + Safety Margin (1.1s)
-                        # We use 1.1s because math requires the TTS engine to process phonetic words.
-                        calculated_wait = (text_length * timing_multiplier) + extra_symbol_pause + 1.1
+                        # Dynamic Safety Margin: Shorter for plain text, longer for equations.
+                        safety_margin = 0.95 if complexity_score == 0 else 1.2
                         
-                        # Execution Pause: Python waits while the browser speaks.
+                        calculated_wait = (text_length * timing_multiplier) + extra_symbol_pause + safety_margin
+                        
                         time.sleep(calculated_wait)
                     
                     chunk_buffer = "" 
             else:
                 full_transcription += text_fragment
                 chunk_buffer += text_fragment
-                # Futuristic typing effect in the response area.
                 ui_anchor.markdown(f'<div class="chat-container"><b>Gyan Setu:</b> {full_transcription}▒</div>', unsafe_allow_html=True)
         
-        # Final UI stabilization.
         ui_anchor.markdown(f'<div class="chat-container"><b>Gyan Setu:</b> {full_transcription}</div>', unsafe_allow_html=True)
         
-        # Historical logging for academic continuity.
         st.session_state.messages.append({"role": "user", "content": query_voice})
         st.session_state.messages.append({"role": "assistant", "content": full_transcription})
 
 else:
-    # Standby Phase UI.
     st.markdown("""
         <div style="text-align:center; padding:60px;">
             <div style="color:#1e293b; font-family:Orbitron; letter-spacing:5px; font-weight:900; font-size:20px;">
                 SYSTEM STANDBY
-            
+            </div>
+            <div style="color:#00fbff; font-family:Rajdhani; font-size:24px; opacity:0.6; margin-top:10px;">
+                Ready for Academic Inquiries (Class 1-12)
+            </div>
         </div>
     """, unsafe_allow_html=True)
-
-# --- END OF V11 MASTER UI ---
