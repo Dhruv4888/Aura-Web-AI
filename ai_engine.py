@@ -11,7 +11,7 @@ class AuraAssistant:
     def __init__(self):
         """
         Gyan Setu Core Engine Initialization.
-        Focus: Maximum stability and high-speed response for Classes 1-12.
+        Focus: Maximum stability, high-speed response, and strict termination.
         """
         self.model = "llama-3.3-70b-versatile"
         try:
@@ -33,16 +33,16 @@ class AuraAssistant:
 
     def clean_text_for_speech(self, text):
         """
-        ULTIMATE PHONETIC RE-ENGINEERING (HIGH-SPEED VERSION):
-        Optimized to handle complex Math and Science without lag.
+        ULTIMATE PHONETIC RE-ENGINEERING (STRICT MENTOR TONE):
+        Optimized to handle complex Math, Science, and History narratives.
         """
-        # Quick-strip technical artifacts
+        # Quick-strip technical artifacts and formatting
         text = re.sub(r'\[WIKI_SEARCH:.*?\]', '', text)
         text = text.replace("$", "").replace("#", "").replace("*", "").replace("`", "")
         text = re.sub(r'\\text\{.*?\}', '', text) 
         
         # High-Speed Mathematical Phonetic Mapping
-        # Focused on natural pauses to prevent overlapping.
+        # Focused on clean breaks to allow the sync engine to process blocks.
         math_map = {
             "²": " square, ",
             "^2": " square, ",
@@ -66,11 +66,11 @@ class AuraAssistant:
             ")": " bracket close "
         }
         
-        # Batch replacement for performance
+        # Batch replacement for high-concurrency performance
         for symbol, word in math_map.items():
             text = text.replace(symbol, word)
 
-        # Senior Mentor Persona Correction (Strictly Male Gender)
+        # Senior Mentor Persona Correction (Strictly Male Academic Voice)
         gender_fix = {
             "sakti hoon": "sakta hoon", 
             "karti hoon": "karta hoon", 
@@ -90,11 +90,11 @@ class AuraAssistant:
     async def _generate_voice_bytes(self, text):
         """
         Asynchronous Voice Synthesis.
-        Optimized for clarity and professional academic tone.
+        Configured for 1.1x speed (Academic Efficiency) with authoritative pitch.
         """
         selected_voice = "hi-IN-MadhurNeural" if self.is_hindi(text) else "en-IN-PrabhatNeural"
         
-        # Rate +10% for slightly faster but clear academic delivery
+        # Rate slightly increased (+10%) to match the faster generation logic
         communicate = edge_tts.Communicate(text, selected_voice, rate="+10%", pitch="-2Hz")
         
         audio_data = b""
@@ -106,7 +106,7 @@ class AuraAssistant:
     def get_audio_data(self, text):
         """
         High-Concurrency Audio Interface.
-        Reduced overhead for faster byte-to-base64 conversion.
+        Converts logical text blocks into base64 vocal packets.
         """
         clean_text = self.clean_text_for_speech(text)
         if not clean_text.strip():
@@ -127,26 +127,28 @@ class AuraAssistant:
 
     def ask_stream(self, query, history):
         """
-        The Reasoning Core (To-The-Point Logic). 
-        Updated to force concise, accurate academic answers.
+        The Reasoning Core (STRICT TERMINATION LOGIC). 
+        Prevents infinite generation and historical repetition.
         """
         is_hindi_in = self.is_hindi(query)
-        # Faster language detection logic
-        forced_lang = "HINDI (Devanagari Script)" if (is_hindi_in or " btao" in query.lower() or " hai" in query.lower()) else "ENGLISH"
+        # Dynamic language detection (English/Hindi/Hinglish)
+        forced_lang = "HINDI (Devanagari Script)" if (is_hindi_in or " btao" in query.lower() or " hai" in query.lower() or " tha" in query.lower()) else "ENGLISH"
         
+        # SYSTEM PROTOCOL - STRICTEST VERSION
         system_instruction = f"""You are 'Gyan Setu', a Senior Academic Mentor.
-        CONCISE RESPONSE PROTOCOL:
-        1. Accuracy: Give direct, accurate answers for Class 1-12 subjects.
-        2. No Fluff: Do NOT explain background unless asked. Do NOT give long introductions.
-        3. Language: Respond strictly in {forced_lang}.
-        4. Math: Provide step-by-step solutions but keep them crisp. Put (.) after each step.
-        5. Sync: Use (.) or (।) after symbols like '=' or '+' for audio pauses.
-        6. Persona: Maintain a professional male teacher identity."""
+        RESPONSE LIMIT PROTOCOL:
+        1. CONTENT: Answer ONLY the specific question asked. Do not provide extra context or related topics.
+        2. LENGTH: Maximum 3 to 5 logical sentences. If it's a math problem, show steps and STOP immediately after the final answer.
+        3. TERMINATION: Do not ask follow-up questions. Once the answer is complete, end the response.
+        4. LANGUAGE: Strict {forced_lang}. 
+        5. SYNC: Put a period (.) or (।) after EVERY step or sentence to signal the audio engine.
+        6. PERSONA: You are a male teacher. Use formal language."""
 
         messages = [{"role": "system", "content": system_instruction}]
-        # Using a shorter context window for faster processing (Last 3 turns)
-        messages.extend(history[-3:]) 
-        messages.append({"role": "user", "content": f"Directly answer this: {query}."})
+        
+        # Optimized context window: Only 2 turns to prevent 'history looping'
+        messages.extend(history[-2:]) 
+        messages.append({"role": "user", "content": f"Student Query: {query}. (Provide a concise answer and stop.)"})
         
         try:
             completion = self.client.chat.completions.create(
@@ -154,19 +156,20 @@ class AuraAssistant:
                 model=self.model,
                 stream=True,
                 temperature=0.1,
-                max_tokens=1024 # Prevents unnecessarily long generation
+                max_tokens=450, # Tightened limit to force conciseness
+                stop=["Student Query:", "Student:", "\n\n\n"] # Hard stop sequences
             )
             
             for chunk in completion:
                 content = chunk.choices[0].delta.content
                 if content:
                     yield content
-                    # Signal for audio break
+                    # Signal for vocal block separation
                     if any(p in content for p in ['.', '!', '?', '।', '\n', '=', ':', ';']):
                         yield "||SYNC_SIGNAL||"
                         
         except Exception as e:
             yield f"Computational Failure: {str(e)}"
 
-# Global instance
+# Global instance for UI integration
 aura = AuraAssistant()
