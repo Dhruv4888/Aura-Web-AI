@@ -25,7 +25,6 @@ st.markdown("""
         margin-top: -60px;
         letter-spacing: 5px;
     }
-    /* Mic Button Styling */
     button[data-testid="stBaseButton-secondary"] {
         background-color: #00fbff !important;
         color: #0b0e14 !important;
@@ -91,7 +90,7 @@ if text:
         current_sentence = ""
         container = st.empty()
         
-        # Generator for streaming
+        # Enhanced Generator for streaming
         for chunk in aura.ask_stream(text, st.session_state.messages):
             if chunk == "||SYNC_SIGNAL||":
                 if current_sentence.strip():
@@ -99,24 +98,30 @@ if text:
                     audio_b64 = aura.get_audio_data(current_sentence.strip())
                     if audio_b64:
                         play_audio(audio_b64)
-                        
-                        # Dynamic Delay Logic: Words per minute basis
-                        # Audio speed is +15%, so 0.05s per character is ideal for sync
-                        delay = len(current_sentence) * 0.052 
+                        # Refined delay: sentence length + natural pause
+                        delay = (len(current_sentence) * 0.045) + 0.25
                         time.sleep(delay)
-                    
                     current_sentence = "" 
             else:
                 full_display_text += chunk
                 current_sentence += chunk
                 # Visual cursor effect for smooth rendering
-                container.markdown(f'<div class="chat-container"><b>Gyan Setu:</b> {full_display_text}█</div>', unsafe_allow_html=True)
+                container.markdown(
+                    f'<div class="chat-container"><b>Gyan Setu:</b> {full_display_text}█</div>',
+                    unsafe_allow_html=True
+                )
         
         # Final display update
-        container.markdown(f'<div class="chat-container"><b>Gyan Setu:</b> {full_display_text}</div>', unsafe_allow_html=True)
+        container.markdown(
+            f'<div class="chat-container"><b>Gyan Setu:</b> {full_display_text}</div>',
+            unsafe_allow_html=True
+        )
         
         # Store context
         st.session_state.messages.append({"role": "user", "content": text})
         st.session_state.messages.append({"role": "assistant", "content": full_display_text})
 else:
-    st.markdown('<p style="text-align:center; color:#4a5568; font-family:Orbitron; margin-top:30px;">SYSTEM READY // AWAITING VOICE INPUT</p>', unsafe_allow_html=True)
+    st.markdown(
+        '<p style="text-align:center; color:#4a5568; font-family:Orbitron; margin-top:30px;">SYSTEM READY // AWAITING VOICE INPUT</p>',
+        unsafe_allow_html=True
+    )
