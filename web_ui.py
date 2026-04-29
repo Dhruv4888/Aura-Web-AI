@@ -4,14 +4,14 @@ from streamlit_mic_recorder import speech_to_text
 import time
 import base64
 
-# --- UI CONFIG ---
+# --- MASTER UI CONFIG ---
 st.set_page_config(page_title="Gyan Setu AI", page_icon="🎓", layout="centered")
 
-# Session state initialize
+# Persistence of Chat History
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
-# --- CSS (High-End Orbitron Theme) ---
+# --- CSS (Futuristic Academic Interface) ---
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Rajdhani:wght@500&display=swap');
@@ -25,38 +25,38 @@ st.markdown("""
         margin-top: -60px;
         letter-spacing: 5px;
     }
-    /* Mic Button Styling */
+    /* Advanced Voice Hub Style */
     button[data-testid="stBaseButton-secondary"] {
         background-color: #00fbff !important;
         color: #0b0e14 !important;
         border-radius: 50% !important;
-        width: 150px !important;
-        height: 150px !important;
-        border: 6px solid #1a202c !important;
+        width: 140px !important;
+        height: 140px !important;
+        border: 8px solid #1a202c !important;
         font-family: 'Orbitron', sans-serif !important;
         font-weight: bold !important;
         margin: 0 auto !important;
         display: flex !important;
-        box-shadow: 0 0 40px rgba(0, 251, 255, 0.3) !important;
-        transition: 0.3s ease-in-out;
+        box-shadow: 0 0 45px rgba(0, 251, 255, 0.4) !important;
+        transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
     }
     button[data-testid="stBaseButton-secondary"]:hover {
-        transform: scale(1.05);
-        box-shadow: 0 0 60px rgba(0, 251, 255, 0.6) !important;
+        transform: scale(1.1) rotate(5deg);
+        box-shadow: 0 0 65px rgba(0, 251, 255, 0.7) !important;
     }
     .chat-container {
         background: #1a202c;
-        padding: 25px;
-        border-radius: 12px;
-        border-left: 6px solid #00fbff;
+        padding: 30px;
+        border-radius: 18px;
+        border-left: 8px solid #00fbff;
         color: #e2e8f0;
         margin-top: 25px;
         font-family: 'Rajdhani', sans-serif;
-        line-height: 1.7;
-        font-size: 20px;
-        box-shadow: 5px 5px 15px rgba(0,0,0,0.3);
+        line-height: 1.8;
+        font-size: 22px;
+        box-shadow: 10px 10px 30px rgba(0,0,0,0.5);
     }
-    .user-box { border-left: 6px solid #ffffff; background: #2d3748; }
+    .user-box { border-left: 8px solid #ffffff; background: #2d3748; }
     #MainMenu, header, footer {visibility: hidden;}
     div[data-testid="stDecoration"] {display:none;}
     </style>
@@ -64,59 +64,63 @@ st.markdown("""
 
 st.write("<h1>GYAN SETU</h1>", unsafe_allow_html=True)
 
-# Audio feedback engine (Invisible)
-def play_audio(b64_data):
+# Sequential Audio Injection Logic
+def trigger_vocal_sync(b64_data):
+    """Injects auto-playing audio component without manual controls"""
     audio_html = f"""
         <audio autoplay="true" style="display:none;">
             <source src="data:audio/mp3;base64,{b64_data}" type="audio/mp3">
         </audio>
     """
+    # Using height=0 and scrolling=False to keep UI clean
     st.components.v1.html(audio_html, height=0)
 
-# Input Section
-text = speech_to_text(
-    start_prompt="TAP TO SPEAK", 
-    stop_prompt="RECORDING...", 
+# Input Section (Voice Focused)
+input_text = speech_to_text(
+    start_prompt="INSTRUCT GYAN SETU", 
+    stop_prompt="CAPTURING AUDIO...", 
     language='en-IN', 
     use_container_width=True,
     just_once=True, 
-    key='gyansetu_main_mic'
+    key='gyansetu_v5_sync'
 )
 
-if text:
-    st.markdown(f'<div class="chat-container user-box"><b>Student:</b> {text}</div>', unsafe_allow_html=True)
+if input_text:
+    # Display the student's question immediately
+    st.markdown(f'<div class="chat-container user-box"><b>Student:</b> {input_text}</div>', unsafe_allow_html=True)
     
-    with st.spinner("Processing Knowledge..."):
-        full_display_text = ""
-        current_sentence = ""
-        container = st.empty()
+    with st.spinner("Gyan Setu is formulating a response..."):
+        full_response = ""
+        buffer_sentence = ""
+        response_container = st.empty()
         
-        # Generator for streaming
-        for chunk in aura.ask_stream(text, st.session_state.messages):
+        # Incremental Streaming with Overlap Prevention
+        for chunk in aura.ask_stream(input_text, st.session_state.messages):
             if chunk == "||SYNC_SIGNAL||":
-                if current_sentence.strip():
-                    # Fast Audio Generation
-                    audio_b64 = aura.get_audio_data(current_sentence.strip())
-                    if audio_b64:
-                        play_audio(audio_b64)
+                if buffer_sentence.strip():
+                    # Generate audio for the completed chunk
+                    voice_data = aura.get_audio_data(buffer_sentence.strip())
+                    if voice_data:
+                        trigger_vocal_sync(voice_data)
                         
-                        # Dynamic Delay Logic: Words per minute basis
-                        # Audio speed is +15%, so 0.05s per character is ideal for sync
-                        delay = len(current_sentence) * 0.052 
-                        time.sleep(delay)
+                        # OVERLAP PROTECTION LOGIC:
+                        # Calculated delay based on sentence length + fixed processing overhead
+                        # 0.058 is the 'Sweet Spot' for +15% rate Edge-TTS
+                        execution_delay = (len(buffer_sentence) * 0.058) + 0.3
+                        time.sleep(execution_delay)
                     
-                    current_sentence = "" 
+                    buffer_sentence = "" 
             else:
-                full_display_text += chunk
-                current_sentence += chunk
-                # Visual cursor effect for smooth rendering
-                container.markdown(f'<div class="chat-container"><b>Gyan Setu:</b> {full_display_text}█</div>', unsafe_allow_html=True)
+                full_response += chunk
+                buffer_sentence += chunk
+                # Visual rendering with animated cursor
+                response_container.markdown(f'<div class="chat-container"><b>Gyan Setu:</b> {full_response}▒</div>', unsafe_allow_html=True)
         
-        # Final display update
-        container.markdown(f'<div class="chat-container"><b>Gyan Setu:</b> {full_display_text}</div>', unsafe_allow_html=True)
+        # Final cleanup for the visual output
+        response_container.markdown(f'<div class="chat-container"><b>Gyan Setu:</b> {full_response}</div>', unsafe_allow_html=True)
         
-        # Store context
-        st.session_state.messages.append({"role": "user", "content": text})
-        st.session_state.messages.append({"role": "assistant", "content": full_display_text})
+        # Memory storage for future context
+        st.session_state.messages.append({"role": "user", "content": input_text})
+        st.session_state.messages.append({"role": "assistant", "content": full_response})
 else:
-    st.markdown('<p style="text-align:center; color:#4a5568; font-family:Orbitron; margin-top:30px;">SYSTEM READY // AWAITING VOICE INPUT</p>', unsafe_allow_html=True)
+    st.markdown('<p style="text-align:center; color:#555; font-family:Orbitron; margin-top:40px; letter-spacing:2px;">AWAITING COMMAND // STANDBY</p>', unsafe_allow_html=True)
