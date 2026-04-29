@@ -9,148 +9,169 @@ import io
 
 class AuraAssistant:
     def __init__(self):
-        # Latest High-Performance Model
+        """
+        Gyan Setu Core Initialization.
+        Focuses on high-performance model selection and API security.
+        """
         self.model = "llama-3.3-70b-versatile"
         try:
-            # Multi-layered Security for API Access
+            # High Priority Security Check for API Access
             if "GROQ_API_KEY" in st.secrets:
                 self.api_key = st.secrets["GROQ_API_KEY"]
                 self.client = Groq(api_key=self.api_key)
             else:
-                st.error("Critical Error: GROQ_API_KEY not found in secrets.")
+                st.error("Critical Failure: GROQ_API_KEY is missing in session secrets.")
         except Exception as e:
-            st.error(f"System Configuration Failure: {e}")
+            st.error(f"Mentor Engine Boot Error: {e}")
 
     def is_hindi(self, text):
-        """Detects Devanagari script to switch between Madhur and Prabhat voices."""
+        """
+        Detection of Devanagari script to ensure perfect voice selection 
+        between Madhur (Hindi) and Prabhat (English).
+        """
         return bool(re.search(r'[\u0900-\u097F]', text))
 
     def clean_text_for_speech(self, text):
         """
-        Extensive text pre-processing to ensure mathematical clarity 
-        and persona consistency. This prevents the voice engine from 
-        tripping over complex symbols.
+        ULTIMATE PHONETIC EXPANSION LOGIC:
+        This section is expanded to ensure that math equations are not just read, 
+        but 'explained' with proper pauses.
         """
-        # Phase 1: Removing Documentation & Markdown Artifacts
+        # Step 1: Scrubbing Technical/Markdown Overheads
         text = re.sub(r'\[WIKI_SEARCH:.*?\]', '', text)
         text = text.replace("$", " dollar ").replace("#", "").replace("*", "").replace("`", "")
         text = re.sub(r'\\text\{.*?\}', '', text) 
         
-        # Phase 2: Mathematical Phonetic Expansion (Crucial for Equations)
-        # Isse voice engine ko har symbol bolne ka sahi samay milta hai
-        math_map = {
-            "²": " squared ",
-            "^2": " squared ",
-            "³": " cubed ",
-            "^3": " cubed ",
-            "+": " plus ",
-            "-": " minus ",
-            "=": " equals ",
+        # Step 2: High-Resolution Mathematical Mapping (Deep Expansion)
+        # We add commas and spaces to force the TTS engine to slow down on symbols.
+        math_expansion_map = {
+            "²": " squared, ",
+            "^2": " squared, ",
+            "³": " cubed, ",
+            "^3": " cubed, ",
             "x": " multiplied by ",
             "*": " multiplied by ",
+            "+": " plus ",
+            "-": " minus ",
+            "=": " equals to ",
             "/": " divided by ",
             "√": " square root of ",
-            "π": " pi "
+            "π": " pi ",
+            "3x": "3 x", 
+            "2x": "2 x",
+            "4x": "4 x",
+            "5x": "5 x",
+            "0": "zero",
+            "(": " open bracket, ",
+            ")": " close bracket, "
         }
-        for sym, word in math_map.items():
-            text = text.replace(sym, word)
+        
+        for symbol, phonetic_word in math_expansion_map.items():
+            text = text.replace(symbol, phonetic_word)
             
-        # Phase 3: Senior Academic Mentor Persona Alignment (Gender Corrections)
-        gender_logic = {
+        # Step 3: Persona Consistency & Gender-Specific Grammar Corrections
+        # Ensuring the 'Senior Academic Mentor' identity stays solid.
+        academic_persona_corrections = {
             "sakti hoon": "sakta hoon", 
             "karti hoon": "karta hoon", 
             "rahi hoon": "raha hoon",
             "huu": "hoon",
             "kar rahi hun": "kar raha hoon",
             "hun ": "hoon ",
-            "main ek ai assistant hoon": "Main aapka senior academic mentor, Gyan Setu hoon"
+            "main ek machine hoon": "Main aapka senior academic mentor, Gyan Setu hoon",
+            "main ek ai hoon": "Main Gyan Setu hoon, aapka shikshak"
         }
-        for wrong, right in gender_logic.items():
-            text = text.replace(wrong, right)
+        
+        for error, fix in academic_persona_corrections.items():
+            text = text.replace(error, fix)
             
         return text
 
     async def _generate_voice_bytes(self, text):
-        """High-speed asynchronous audio streaming directly to memory."""
-        # Selecting the most natural Indian voices for academic context
+        """
+        RAM-Resident Vocal Synthesis.
+        Optimized for high-fidelity audio generation without disk latency.
+        """
         selected_voice = "hi-IN-MadhurNeural" if self.is_hindi(text) else "en-IN-PrabhatNeural"
         
-        # Optimized Rate (+15%) and Pitch for a commanding mentor-like voice
-        communicate = edge_tts.Communicate(text, selected_voice, rate="+15%", pitch="-1Hz")
+        # Rate set to +10% (Slightly slower than before for better math clarity)
+        # Pitch kept slightly low for a professional, mature mentor tone.
+        communicate = edge_tts.Communicate(text, selected_voice, rate="+10%", pitch="-1Hz")
         
-        audio_data = b""
+        audio_stream = b""
         async for chunk in communicate.stream():
             if chunk["type"] == "audio":
-                audio_data += chunk["data"]
-        return audio_data
+                audio_stream += chunk["data"]
+        return audio_stream
 
     def get_audio_data(self, text):
-        """Base64 audio generator with robust thread-safe loop management."""
-        clean_text = self.clean_text_for_speech(text)
-        if not clean_text.strip():
+        """
+        Thread-Safe Audio Exporter for Streamlit.
+        Manages event loops to prevent async collisions during speech.
+        """
+        cleaned_payload = self.clean_text_for_speech(text)
+        if not cleaned_payload.strip():
             return None
             
         try:
-            # Ensuring a dedicated event loop for each Streamlit session thread
+            # Ensuring localized event loops for each concurrent user thread
             try:
-                loop = asyncio.get_event_loop()
+                current_loop = asyncio.get_event_loop()
             except RuntimeError:
-                loop = asyncio.new_event_loop()
-                asyncio.set_event_loop(loop)
+                current_loop = asyncio.new_event_loop()
+                asyncio.set_event_loop(current_loop)
             
-            audio_bytes = loop.run_until_complete(self._generate_voice_bytes(clean_text))
-            return base64.b64encode(audio_bytes).decode()
-        except Exception as e:
-            # Silently logging for performance; error display handled by caller if needed
-            print(f"Vocal Engine Error: {e}")
+            audio_raw = current_loop.run_until_complete(self._generate_voice_bytes(cleaned_payload))
+            return base64.b64encode(audio_raw).decode()
+        except Exception as processing_error:
+            print(f"TTS Engine Processing Failure: {processing_error}")
             return None
 
     def ask_stream(self, query, history):
         """
-        AI Reasoning engine with streaming enabled. 
-        Uses specific punctuation triggers to sync text with audio steps.
+        Advanced Reasoning & Streaming Engine.
+        Uses punctuation-based chunking for synchronized text-to-vocal delivery.
         """
-        is_hindi_script = self.is_hindi(query)
-        # Identifying intent to force correct script output
-        roman_keywords = ['kya', 'hai', 'kaise', 'batao', 'samjhao', 'kyun', 'kab', 'formula', 'solution']
-        is_roman_hindi = any(word in query.lower() for word in roman_keywords)
+        # Language Context Detection
+        is_hindi_input = self.is_hindi(query)
+        roman_indic_keywords = ['kya', 'hai', 'kaise', 'batao', 'samjhao', 'kyun', 'kab', 'formula', 'answer']
+        is_romanized_hindi = any(word in query.lower() for word in roman_indic_keywords)
         
-        forced_lang = "HINDI (Devanagari Script)" if (is_hindi_script or is_roman_hindi) else "ENGLISH"
+        assigned_lang = "HINDI (Devanagari Script)" if (is_hindi_input or is_romanized_hindi) else "ENGLISH"
         
-        # High-Authority Persona Instructions
-        system_instruction = f"""You are 'Gyan Setu', a formal Senior Academic Mentor.
-        EXECUTIVE OPERATING PROCEDURES:
-        1. STRICT LANGUAGE: Respond only in {forced_lang}.
-        2. DIRECT RESPONSE: No greetings like "Hello" or "Namaste". No prefixes like "Aap" or "Student".
-        3. MATHEMATICAL CLARITY: Break every equation into distinct steps. 
-        4. PUNCTUATION SYNC: Use a full stop (.) or । after every number, equation step, or logic block.
-        5. TONE: Scholarly, professional, and precise.
-        6. SCRIPT: Never use Roman Hindi. Use pure Devanagari for Hindi."""
+        # SYSTEM PROTOCOL - DEFINING THE MENTOR BEHAVIOR
+        system_protocol = f"""You are 'Gyan Setu', a formal Senior Academic Mentor.
+        OPERATIONAL GUIDELINES:
+        1. MANDATORY LANGUAGE: Respond exclusively in {assigned_lang}.
+        2. NO PREFIXES: Never start with "Hello," "Student," or "Ji". Go straight to the answer.
+        3. MATHEMATICAL PRECISION: When solving equations (e.g., 3x² - 2x + 50 = 0), explain each step.
+        4. VOCAL SYNC: You must place a period (.) or (।) after every equation symbol or distinct logic step.
+        5. TONE: Expert, scholarly, and professional.
+        6. SCRIPT: Use pure Devanagari for Hindi; strictly forbid Romanized Hindi."""
 
-        messages = [{"role": "system", "content": system_instruction}]
-        # Maintaining context window of last 4 interactions
+        messages = [{"role": "system", "content": system_protocol}]
+        # Maintaining short-term context window for performance
         messages.extend(history[-4:]) 
-        messages.append({"role": "user", "content": f"Academic Task: {query}. Respond in {forced_lang} directly."})
+        messages.append({"role": "user", "content": f"Student Query: {query}. Provide direct solution in {assigned_lang}."})
         
         try:
-            completion = self.client.chat.completions.create(
+            stream_response = self.client.chat.completions.create(
                 messages=messages, 
                 model=self.model,
                 stream=True,
                 temperature=0.1
             )
             
-            for chunk in completion:
-                content = chunk.choices[0].delta.content
-                if content:
-                    yield content
-                    # SYNC_SIGNAL triggers the audio engine for the current accumulated chunk
-                    # Added '=' and '\n' to better handle math equations and lists
-                    if any(punc in content for punc in ['.', '!', '?', '।', '\n', '=', ':', ';']):
+            for chunk in stream_response:
+                text_content = chunk.choices[0].delta.content
+                if text_content:
+                    yield text_content
+                    # SYNC TRIGGER: Breaking at punctuation or mathematical conclusions
+                    if any(p in text_content for p in ['.', '!', '?', '।', '\n', '=', ':', ';']):
                         yield "||SYNC_SIGNAL||"
                         
-        except Exception as e:
-            yield f"Core Processing Error: {str(e)}"
+        except Exception as api_err:
+            yield f"Mentor AI Error: {str(api_err)}"
 
-# Singleton Instance for Global Access
+# Singleton Pattern for Global Accessibility
 aura = AuraAssistant()
