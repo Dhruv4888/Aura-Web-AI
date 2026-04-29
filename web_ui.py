@@ -124,7 +124,7 @@ def inject_isolated_audio(b64_data, chunk_id):
 # --- GLOBAL VOICE ACQUISITION ---
 # Capturing the student's voice input with English/Hindi support.
 query_voice = speech_to_text(
-    start_prompt="TAP TO SPEAK", 
+    start_prompt="START ACADEMIC SESSION", 
     stop_prompt="GYAN SETU IS PROCESSING...", 
     language='en-IN', 
     use_container_width=True,
@@ -195,6 +195,9 @@ else:
         <div style="text-align:center; padding:60px;">
             <div style="color:#00fbff; font-family:Orbitron; letter-spacing:5px; font-weight:900; font-size:22px; text-shadow: 0 0 15px rgba(0, 251, 255, 0.4);">
                 SYSTEM ONLINE: GYAN SETU
+            </div>
+            <div style="color:#94a3b8; font-family:Rajdhani; font-size:20px; margin-top:10px;">
+                Ready for Class 1-12 Academic Mentorship
             </div>
         </div>
     """, unsafe_allow_html=True)
