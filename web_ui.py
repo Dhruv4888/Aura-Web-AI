@@ -6,6 +6,7 @@ import base64
 import re
 
 # --- GLOBAL ACADEMIC ENGINE CONFIGURATION ---
+# Setting up the high-authority mentor workspace for Class 1-12.
 st.set_page_config(
     page_title="Gyan Setu AI - Global Academic Mentor", 
     page_icon="🎓", 
@@ -13,19 +14,21 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# Persistent Session Memory
+# Persistent Session Memory: Ensures the AI remembers the flow of complex conversations.
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
-# --- THE FUTURISTIC ORBITRON INTERFACE ---
+# --- THE FUTURISTIC ORBITRON INTERFACE (UI INTEGRITY) ---
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@500;600;700&display=swap');
     
+    /* Deep Cosmic Aesthetic */
     .stApp { 
         background: radial-gradient(circle at center, #0f172a 0%, #020617 100%) !important; 
     }
     
+    /* Neon Title Design */
     h1 { 
         color: #00fbff !important; 
         font-family: 'Orbitron', sans-serif !important; 
@@ -38,6 +41,7 @@ st.markdown("""
         font-weight: 900;
     }
     
+    /* The Central Audio-Visual Hub (Mic Button) */
     button[data-testid="stBaseButton-secondary"] {
         background-color: #00fbff !important;
         color: #0b0e14 !important;
@@ -62,6 +66,7 @@ st.markdown("""
         border-color: #ffffff !important;
     }
     
+    /* Mentor Output Box: High Readability */
     .chat-container {
         background: rgba(15, 23, 42, 0.95);
         padding: 50px;
@@ -83,9 +88,11 @@ st.markdown("""
         box-shadow: 15px 15px 50px rgba(0,0,0,0.6);
     }
     
+    /* Minimalist Cleanup */
     #MainMenu, header, footer {visibility: hidden;}
     div[data-testid="stDecoration"] {display:none;}
     
+    /* Smooth Scrollbar */
     ::-webkit-scrollbar { width: 12px; }
     ::-webkit-scrollbar-track { background: #020617; }
     ::-webkit-scrollbar-thumb { 
@@ -100,8 +107,8 @@ st.write("<h1>GYAN SETU</h1>", unsafe_allow_html=True)
 # --- THE BLOCKING SYNC MECHANISM ---
 def inject_isolated_audio(b64_data, chunk_id):
     """
-    Directly injects the audio data into the DOM.
-    Aura's voice flows through the browser layer.
+    Directly injects audio into the DOM with a unique ID.
+    'autoplay' ensures the student hears the mentor immediately.
     """
     audio_markup = f"""
         <div id="vocal-unit-{chunk_id}" style="display:none;">
@@ -123,59 +130,73 @@ query_voice = speech_to_text(
 )
 
 if query_voice:
+    # Render student query
     st.markdown(f'<div class="chat-container user-box"><b>Student:</b> {query_voice}</div>', unsafe_allow_html=True)
     
-    with st.spinner("Gyan Setu is thinking..."):
+    with st.spinner("Synthesizing solution..."):
         full_transcription = ""
         chunk_buffer = ""
         ui_anchor = st.empty()
         audio_counter = 0
         
-        # --- DYNAMIC SYNC ENGINE ---
+        # LOGIC GATE: Processing the mentor's concise stream.
         for text_fragment in aura.ask_stream(query_voice, st.session_state.messages):
             if text_fragment == "||SYNC_SIGNAL||":
                 if chunk_buffer.strip():
                     audio_counter += 1
                     
-                    # Voice Generation
+                    # 1. Voice Data Generation
                     vocal_hex = aura.get_audio_data(chunk_buffer.strip())
                     
                     if vocal_hex:
+                        # 2. Immediate Injection
                         inject_isolated_audio(vocal_hex, audio_counter)
                         
-                        # Calculation of speech duration to match text
-                        # Aura engine speed is +12% in ai_engine.py
+                        # --- ENHANCED DYNAMIC SYNC LOGIC ---
+                        # Voice rate is +12%. Standard speaking speed is ~13-15 chars per second.
+                        
+                        # Math symbol detection for specialized timing
+                        math_symbols = re.findall(r'[0-9\+\-\=\^\/x²³\(\)]', chunk_buffer)
+                        complexity_score = len(math_symbols)
                         text_length = len(chunk_buffer)
                         
-                        # BHAI JI DHYAN DEIN: 
-                        # 'ai_engine.py' mein humne already 0.06s ka delay dala hai.
-                        # Isliye yahan hum sirf utna wait karenge jitna Madhur ko bolne mein lagega.
-                        # 0.07s per char is a perfect match for +12% speed.
-                        calculated_wait = (text_length * 0.07) 
+                        # CALIBRATION:
+                        # aura.ask_stream already uses 0.06s delay per chunk.
+                        # We adjust the wait here to ensure the NEXT sentence doesn't overlap.
+                        # Multiplier: 0.085 (Natural pace for +12% rate)
+                        timing_multiplier = 0.085
+                        extra_symbol_pause = complexity_score * 0.25 
                         
-                        # Buffer ko thoda kam kiya hai taaki synchronization tight rahe
-                        time.sleep(max(0.5, calculated_wait - 0.2))
+                        # FINAL BLOCKING CALCULATION:
+                        # (Length * Speed) + Math Overhead + 0.5s safety buffer
+                        calculated_wait = (text_length * timing_multiplier) + extra_symbol_pause + 0.5
+                        
+                        # This pause locks the loop so the UI doesn't print faster than the voice.
+                        time.sleep(calculated_wait)
                     
                     chunk_buffer = "" 
             else:
                 full_transcription += text_fragment
                 chunk_buffer += text_fragment
-                
-                # Scholarly typing effect matches the ai_engine's 0.06s delay
+                # Scholarly typing effect
                 ui_anchor.markdown(f'<div class="chat-container"><b>Gyan Setu:</b> {full_transcription}▒</div>', unsafe_allow_html=True)
         
-        # Final UI Cleanup
+        # Final UI Update
         ui_anchor.markdown(f'<div class="chat-container"><b>Gyan Setu:</b> {full_transcription}</div>', unsafe_allow_html=True)
         
-        # History Update
+        # Update session memory
         st.session_state.messages.append({"role": "user", "content": query_voice})
         st.session_state.messages.append({"role": "assistant", "content": full_transcription})
 
 else:
+    # Standby Interface
     st.markdown("""
         <div style="text-align:center; padding:60px;">
             <div style="color:#00fbff; font-family:Orbitron; letter-spacing:5px; font-weight:900; font-size:22px; text-shadow: 0 0 15px rgba(0, 251, 255, 0.4);">
                 SYSTEM ONLINE: GYAN SETU
             </div>
+            <p style="color:#94a3b8; font-family:Rajdhani; font-size:18px; margin-top:10px;">Waiting for student input...</p>
         </div>
     """, unsafe_allow_html=True)
+
+# --- END OF V12 MASTER UI ---
