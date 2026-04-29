@@ -14,11 +14,12 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# Persistent Session Memory: Ensures the AI remembers the flow of complex conversations.
+# Persistent Session Memory: Ensures the AI remembers the flow of complex derivations.
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
 # --- THE FUTURISTIC ORBITRON INTERFACE (UI INTEGRITY) ---
+# Keeping the UI exactly as per your preference with the deep cosmic aesthetic.
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@500;600;700&display=swap');
@@ -66,7 +67,7 @@ st.markdown("""
         border-color: #ffffff !important;
     }
     
-    /* Mentor Output Box: High Readability */
+    /* Mentor Output Box: High Readability for All Subjects */
     .chat-container {
         background: rgba(15, 23, 42, 0.95);
         padding: 50px;
@@ -105,10 +106,11 @@ st.markdown("""
 st.write("<h1>GYAN SETU</h1>", unsafe_allow_html=True)
 
 # --- THE BLOCKING SYNC MECHANISM ---
+# This function handles the injection and execution of voice chunks.
 def inject_isolated_audio(b64_data, chunk_id):
     """
-    Directly injects audio into the DOM with a unique ID.
-    'autoplay' ensures the student hears the mentor immediately.
+    Directly injects the audio data into the DOM.
+    Each chunk is assigned a unique ID to prevent overlap at the browser layer.
     """
     audio_markup = f"""
         <div id="vocal-unit-{chunk_id}" style="display:none;">
@@ -120,6 +122,7 @@ def inject_isolated_audio(b64_data, chunk_id):
     st.components.v1.html(audio_markup, height=0)
 
 # --- GLOBAL VOICE ACQUISITION ---
+# Capturing the student's voice input with English/Hindi support.
 query_voice = speech_to_text(
     start_prompt="TAP TO SPEAK", 
     stop_prompt="GYAN SETU IS PROCESSING...", 
@@ -130,7 +133,7 @@ query_voice = speech_to_text(
 )
 
 if query_voice:
-    # Render student query
+    # Render user query with bold mentor styling.
     st.markdown(f'<div class="chat-container user-box"><b>Student:</b> {query_voice}</div>', unsafe_allow_html=True)
     
     with st.spinner("Synthesizing solution..."):
@@ -139,63 +142,60 @@ if query_voice:
         ui_anchor = st.empty()
         audio_counter = 0
         
-        # LOGIC GATE: Processing the mentor's concise stream.
+        # LOGIC GATE: Processing the mentor's concise and fast stream.
         for text_fragment in aura.ask_stream(query_voice, st.session_state.messages):
             if text_fragment == "||SYNC_SIGNAL||":
                 if chunk_buffer.strip():
                     audio_counter += 1
                     
-                    # 1. Voice Data Generation
+                    # Convert the current concise step into vocal data.
                     vocal_hex = aura.get_audio_data(chunk_buffer.strip())
                     
                     if vocal_hex:
-                        # 2. Immediate Injection
                         inject_isolated_audio(vocal_hex, audio_counter)
                         
                         # --- ENHANCED DYNAMIC SYNC LOGIC ---
-                        # Voice rate is +12%. Standard speaking speed is ~13-15 chars per second.
+                        # Calculating phonological weight for all Class 1-12 subjects.
                         
-                        # Math symbol detection for specialized timing
+                        # Detect math symbols for specialized timing
                         math_symbols = re.findall(r'[0-9\+\-\=\^\/x²³\(\)]', chunk_buffer)
                         complexity_score = len(math_symbols)
                         text_length = len(chunk_buffer)
                         
-                        # CALIBRATION:
-                        # aura.ask_stream already uses 0.06s delay per chunk.
-                        # We adjust the wait here to ensure the NEXT sentence doesn't overlap.
-                        # Multiplier: 0.085 (Natural pace for +12% rate)
-                        timing_multiplier = 0.085
-                        extra_symbol_pause = complexity_score * 0.25 
+                        # Multiplier adjustment for +10% rate in engine
+                        # Standard char speed: 0.082s. Math symbol speed: 0.3s.
+                        timing_multiplier = 0.082
+                        extra_symbol_pause = complexity_score * 0.30
                         
                         # FINAL BLOCKING CALCULATION:
-                        # (Length * Speed) + Math Overhead + 0.5s safety buffer
-                        calculated_wait = (text_length * timing_multiplier) + extra_symbol_pause + 0.5
+                        # (Chars * Speed) + (Math Overhead) + Buffer (1.0s for fast processing)
+                        # Reduced from 1.1s to 1.0s for the new faster engine.
+                        calculated_wait = (text_length * timing_multiplier) + extra_symbol_pause + 1.0
                         
-                        # This pause locks the loop so the UI doesn't print faster than the voice.
+                        # Execution Pause: Locks the next chunk until current is spoken.
                         time.sleep(calculated_wait)
                     
                     chunk_buffer = "" 
             else:
                 full_transcription += text_fragment
                 chunk_buffer += text_fragment
-                # Scholarly typing effect
+                # Scholarly typing effect for visual engagement.
                 ui_anchor.markdown(f'<div class="chat-container"><b>Gyan Setu:</b> {full_transcription}▒</div>', unsafe_allow_html=True)
         
-        # Final UI Update
+        # UI Stabilization: Cleaning up the final response.
         ui_anchor.markdown(f'<div class="chat-container"><b>Gyan Setu:</b> {full_transcription}</div>', unsafe_allow_html=True)
         
-        # Update session memory
+        # Update session history for contextual continuity.
         st.session_state.messages.append({"role": "user", "content": query_voice})
         st.session_state.messages.append({"role": "assistant", "content": full_transcription})
 
 else:
-    # Standby Interface
+    # Standby Interface: Welcoming the student to the platform.
     st.markdown("""
         <div style="text-align:center; padding:60px;">
             <div style="color:#00fbff; font-family:Orbitron; letter-spacing:5px; font-weight:900; font-size:22px; text-shadow: 0 0 15px rgba(0, 251, 255, 0.4);">
                 SYSTEM ONLINE: GYAN SETU
             </div>
-            <p style="color:#94a3b8; font-family:Rajdhani; font-size:18px; margin-top:10px;">Waiting for student input...</p>
         </div>
     """, unsafe_allow_html=True)
 
