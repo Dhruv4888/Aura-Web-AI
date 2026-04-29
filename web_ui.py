@@ -195,10 +195,7 @@ else:
         <div style="text-align:center; padding:60px;">
             <div style="color:#1e293b; font-family:Orbitron; letter-spacing:5px; font-weight:900; font-size:20px;">
                 SYSTEM STANDBY
-            </div>
-            <div style="color:#00fbff; font-family:Rajdhani; font-size:24px; opacity:0.6; margin-top:10px;">
-                Ready for Physics, Math, or Chemistry inquiries.
-            </div>
+            
         </div>
     """, unsafe_allow_html=True)
 
