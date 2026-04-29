@@ -124,7 +124,7 @@ def inject_isolated_audio(b64_data, chunk_id):
 # --- GLOBAL VOICE ACQUISITION ---
 # Capturing the student's voice input with English/Hindi support.
 query_voice = speech_to_text(
-    start_prompt="TAP To SPEAK", 
+    start_prompt="TAP TO SPEAK", 
     stop_prompt="GYAN SETU IS PROCESSING...", 
     language='en-IN', 
     use_container_width=True,
