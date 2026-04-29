@@ -100,8 +100,8 @@ st.write("<h1>GYAN SETU</h1>", unsafe_allow_html=True)
 # --- THE BLOCKING SYNC MECHANISM ---
 def inject_isolated_audio(b64_data, chunk_id):
     """
-    Directly injects audio into Streamlit DOM. 
-    Each chunk gets its own space to prevent overlaps.
+    Directly injects the audio data into the DOM.
+    Aura's voice flows through the browser layer.
     """
     audio_markup = f"""
         <div id="vocal-unit-{chunk_id}" style="display:none;">
@@ -131,49 +131,43 @@ if query_voice:
         ui_anchor = st.empty()
         audio_counter = 0
         
-        # LOGIC GATE: Syncing ai_engine.py with UI
+        # --- DYNAMIC SYNC ENGINE ---
         for text_fragment in aura.ask_stream(query_voice, st.session_state.messages):
             if text_fragment == "||SYNC_SIGNAL||":
                 if chunk_buffer.strip():
                     audio_counter += 1
                     
-                    # 1. Audio Generate (Base64)
+                    # Voice Generation
                     vocal_hex = aura.get_audio_data(chunk_buffer.strip())
                     
                     if vocal_hex:
-                        # 2. Audio Inject (Immediate play)
                         inject_isolated_audio(vocal_hex, audio_counter)
                         
-                        # --- KUNDAN SIR'S DYNAMIC SYNC LOGIC ---
-                        # Text length aur math complexity ke hisaab se 'wait' calculate karna.
-                        # Standard char speed matched with engine's 0.06 sleep.
-                        
-                        math_symbols = re.findall(r'[0-9\+\-\=\^\/x²³\(\)]', chunk_buffer)
-                        complexity_score = len(math_symbols)
+                        # Calculation of speech duration to match text
+                        # Aura engine speed is +12% in ai_engine.py
                         text_length = len(chunk_buffer)
                         
-                        # CALIBRATION: Engine rate is +12%, so we adjust the wait.
-                        timing_multiplier = 0.085 # Adjusted for Madhur's speed
-                        extra_symbol_pause = complexity_score * 0.25
+                        # BHAI JI DHYAN DEIN: 
+                        # 'ai_engine.py' mein humne already 0.06s ka delay dala hai.
+                        # Isliye yahan hum sirf utna wait karenge jitna Madhur ko bolne mein lagega.
+                        # 0.07s per char is a perfect match for +12% speed.
+                        calculated_wait = (text_length * 0.07) 
                         
-                        # Calculated wait ensures text finishes as voice starts.
-                        # Buffer reduced to 0.4s for minimal lag.
-                        calculated_wait = (text_length * timing_multiplier) + extra_symbol_pause + 0.4
-                        
-                        # Blocking the loop to maintain sequence
-                        time.sleep(calculated_wait)
+                        # Buffer ko thoda kam kiya hai taaki synchronization tight rahe
+                        time.sleep(max(0.5, calculated_wait - 0.2))
                     
                     chunk_buffer = "" 
             else:
-                # Typewriter effect combined with engine's internal sleep
                 full_transcription += text_fragment
                 chunk_buffer += text_fragment
+                
+                # Scholarly typing effect matches the ai_engine's 0.06s delay
                 ui_anchor.markdown(f'<div class="chat-container"><b>Gyan Setu:</b> {full_transcription}▒</div>', unsafe_allow_html=True)
         
-        # UI Final Cleanup
+        # Final UI Cleanup
         ui_anchor.markdown(f'<div class="chat-container"><b>Gyan Setu:</b> {full_transcription}</div>', unsafe_allow_html=True)
         
-        # Memory Update
+        # History Update
         st.session_state.messages.append({"role": "user", "content": query_voice})
         st.session_state.messages.append({"role": "assistant", "content": full_transcription})
 
