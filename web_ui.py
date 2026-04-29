@@ -6,7 +6,6 @@ import base64
 import re
 
 # --- GLOBAL ACADEMIC ENGINE CONFIGURATION ---
-# Setting up the high-authority mentor workspace for Class 1-12.
 st.set_page_config(
     page_title="Gyan Setu AI - Global Academic Mentor", 
     page_icon="🎓", 
@@ -14,22 +13,19 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# Persistent Session Memory: Ensures the AI remembers the flow of complex derivations.
+# Persistent Session Memory
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
-# --- THE FUTURISTIC ORBITRON INTERFACE (UI INTEGRITY) ---
-# Keeping the UI exactly as per your preference with the deep cosmic aesthetic.
+# --- THE FUTURISTIC ORBITRON INTERFACE ---
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@500;600;700&display=swap');
     
-    /* Deep Cosmic Aesthetic */
     .stApp { 
         background: radial-gradient(circle at center, #0f172a 0%, #020617 100%) !important; 
     }
     
-    /* Neon Title Design */
     h1 { 
         color: #00fbff !important; 
         font-family: 'Orbitron', sans-serif !important; 
@@ -42,7 +38,6 @@ st.markdown("""
         font-weight: 900;
     }
     
-    /* The Central Audio-Visual Hub (Mic Button) */
     button[data-testid="stBaseButton-secondary"] {
         background-color: #00fbff !important;
         color: #0b0e14 !important;
@@ -67,7 +62,6 @@ st.markdown("""
         border-color: #ffffff !important;
     }
     
-    /* Mentor Output Box: High Readability for All Subjects */
     .chat-container {
         background: rgba(15, 23, 42, 0.95);
         padding: 50px;
@@ -89,11 +83,9 @@ st.markdown("""
         box-shadow: 15px 15px 50px rgba(0,0,0,0.6);
     }
     
-    /* Minimalist Cleanup */
     #MainMenu, header, footer {visibility: hidden;}
     div[data-testid="stDecoration"] {display:none;}
     
-    /* Smooth Scrollbar */
     ::-webkit-scrollbar { width: 12px; }
     ::-webkit-scrollbar-track { background: #020617; }
     ::-webkit-scrollbar-thumb { 
@@ -106,11 +98,10 @@ st.markdown("""
 st.write("<h1>GYAN SETU</h1>", unsafe_allow_html=True)
 
 # --- THE BLOCKING SYNC MECHANISM ---
-# This function handles the injection and execution of voice chunks.
 def inject_isolated_audio(b64_data, chunk_id):
     """
-    Directly injects the audio data into the DOM.
-    Each chunk is assigned a unique ID to prevent overlap at the browser layer.
+    Directly injects audio into Streamlit DOM. 
+    Each chunk gets its own space to prevent overlaps.
     """
     audio_markup = f"""
         <div id="vocal-unit-{chunk_id}" style="display:none;">
@@ -122,7 +113,6 @@ def inject_isolated_audio(b64_data, chunk_id):
     st.components.v1.html(audio_markup, height=0)
 
 # --- GLOBAL VOICE ACQUISITION ---
-# Capturing the student's voice input with English/Hindi support.
 query_voice = speech_to_text(
     start_prompt="TAP TO SPEAK", 
     stop_prompt="GYAN SETU IS PROCESSING...", 
@@ -133,70 +123,65 @@ query_voice = speech_to_text(
 )
 
 if query_voice:
-    # Render user query with bold mentor styling.
     st.markdown(f'<div class="chat-container user-box"><b>Student:</b> {query_voice}</div>', unsafe_allow_html=True)
     
-    with st.spinner("Synthesizing solution..."):
+    with st.spinner("Gyan Setu is thinking..."):
         full_transcription = ""
         chunk_buffer = ""
         ui_anchor = st.empty()
         audio_counter = 0
         
-        # LOGIC GATE: Processing the mentor's concise and fast stream.
+        # LOGIC GATE: Syncing ai_engine.py with UI
         for text_fragment in aura.ask_stream(query_voice, st.session_state.messages):
             if text_fragment == "||SYNC_SIGNAL||":
                 if chunk_buffer.strip():
                     audio_counter += 1
                     
-                    # Convert the current concise step into vocal data.
+                    # 1. Audio Generate (Base64)
                     vocal_hex = aura.get_audio_data(chunk_buffer.strip())
                     
                     if vocal_hex:
+                        # 2. Audio Inject (Immediate play)
                         inject_isolated_audio(vocal_hex, audio_counter)
                         
-                        # --- ENHANCED DYNAMIC SYNC LOGIC ---
-                        # Calculating phonological weight for all Class 1-12 subjects.
+                        # --- KUNDAN SIR'S DYNAMIC SYNC LOGIC ---
+                        # Text length aur math complexity ke hisaab se 'wait' calculate karna.
+                        # Standard char speed matched with engine's 0.06 sleep.
                         
-                        # Detect math symbols for specialized timing
                         math_symbols = re.findall(r'[0-9\+\-\=\^\/x²³\(\)]', chunk_buffer)
                         complexity_score = len(math_symbols)
                         text_length = len(chunk_buffer)
                         
-                        # Multiplier adjustment for +10% rate in engine
-                        # Standard char speed: 0.082s. Math symbol speed: 0.3s.
-                        timing_multiplier = 0.082
-                        extra_symbol_pause = complexity_score * 0.30
+                        # CALIBRATION: Engine rate is +12%, so we adjust the wait.
+                        timing_multiplier = 0.085 # Adjusted for Madhur's speed
+                        extra_symbol_pause = complexity_score * 0.25
                         
-                        # FINAL BLOCKING CALCULATION:
-                        # (Chars * Speed) + (Math Overhead) + Buffer (1.0s for fast processing)
-                        # Reduced from 1.1s to 1.0s for the new faster engine.
-                        calculated_wait = (text_length * timing_multiplier) + extra_symbol_pause + 1.0
+                        # Calculated wait ensures text finishes as voice starts.
+                        # Buffer reduced to 0.4s for minimal lag.
+                        calculated_wait = (text_length * timing_multiplier) + extra_symbol_pause + 0.4
                         
-                        # Execution Pause: Locks the next chunk until current is spoken.
+                        # Blocking the loop to maintain sequence
                         time.sleep(calculated_wait)
                     
                     chunk_buffer = "" 
             else:
+                # Typewriter effect combined with engine's internal sleep
                 full_transcription += text_fragment
                 chunk_buffer += text_fragment
-                # Scholarly typing effect for visual engagement.
                 ui_anchor.markdown(f'<div class="chat-container"><b>Gyan Setu:</b> {full_transcription}▒</div>', unsafe_allow_html=True)
         
-        # UI Stabilization: Cleaning up the final response.
+        # UI Final Cleanup
         ui_anchor.markdown(f'<div class="chat-container"><b>Gyan Setu:</b> {full_transcription}</div>', unsafe_allow_html=True)
         
-        # Update session history for contextual continuity.
+        # Memory Update
         st.session_state.messages.append({"role": "user", "content": query_voice})
         st.session_state.messages.append({"role": "assistant", "content": full_transcription})
 
 else:
-    # Standby Interface: Welcoming the student to the platform.
     st.markdown("""
         <div style="text-align:center; padding:60px;">
             <div style="color:#00fbff; font-family:Orbitron; letter-spacing:5px; font-weight:900; font-size:22px; text-shadow: 0 0 15px rgba(0, 251, 255, 0.4);">
                 SYSTEM ONLINE: GYAN SETU
-           
+            </div>
         </div>
     """, unsafe_allow_html=True)
-
-# --- END OF V12 MASTER UI ---
