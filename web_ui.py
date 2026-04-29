@@ -6,7 +6,7 @@ import base64
 import re
 
 # --- GLOBAL ACADEMIC ENGINE CONFIGURATION ---
-# Setting up the high-authority mentor workspace.
+# Setting up the high-authority mentor workspace for Class 1-12.
 st.set_page_config(
     page_title="Gyan Setu AI - Global Academic Mentor", 
     page_icon="🎓", 
@@ -19,6 +19,7 @@ if "messages" not in st.session_state:
     st.session_state.messages = []
 
 # --- THE FUTURISTIC ORBITRON INTERFACE (UI INTEGRITY) ---
+# Keeping the UI exactly as per your preference with the deep cosmic aesthetic.
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@500;600;700&display=swap');
@@ -66,7 +67,7 @@ st.markdown("""
         border-color: #ffffff !important;
     }
     
-    /* Mentor Output Box: High Readability */
+    /* Mentor Output Box: High Readability for All Subjects */
     .chat-container {
         background: rgba(15, 23, 42, 0.95);
         padding: 50px;
@@ -105,9 +106,11 @@ st.markdown("""
 st.write("<h1>GYAN SETU</h1>", unsafe_allow_html=True)
 
 # --- THE BLOCKING SYNC MECHANISM ---
+# This function handles the injection and execution of voice chunks.
 def inject_isolated_audio(b64_data, chunk_id):
     """
-    Injects audio and ensures the browser handles it as a distinct stream.
+    Directly injects the audio data into the DOM.
+    Each chunk is assigned a unique ID to prevent overlap at the browser layer.
     """
     audio_markup = f"""
         <div id="vocal-unit-{chunk_id}" style="display:none;">
@@ -119,16 +122,18 @@ def inject_isolated_audio(b64_data, chunk_id):
     st.components.v1.html(audio_markup, height=0)
 
 # --- GLOBAL VOICE ACQUISITION ---
+# Capturing the student's voice input with English/Hindi support.
 query_voice = speech_to_text(
     start_prompt="START ACADEMIC SESSION", 
     stop_prompt="GYAN SETU IS PROCESSING...", 
     language='en-IN', 
     use_container_width=True,
     just_once=True, 
-    key='core_engine_v12'
+    key='core_engine_v12_final'
 )
 
 if query_voice:
+    # Render user query with bold mentor styling.
     st.markdown(f'<div class="chat-container user-box"><b>Student:</b> {query_voice}</div>', unsafe_allow_html=True)
     
     with st.spinner("Synthesizing solution..."):
@@ -137,56 +142,64 @@ if query_voice:
         ui_anchor = st.empty()
         audio_counter = 0
         
-        # LOGIC GATE: Precise streaming with subject-aware pauses.
+        # LOGIC GATE: Processing the mentor's concise and fast stream.
         for text_fragment in aura.ask_stream(query_voice, st.session_state.messages):
             if text_fragment == "||SYNC_SIGNAL||":
                 if chunk_buffer.strip():
                     audio_counter += 1
                     
+                    # Convert the current concise step into vocal data.
                     vocal_hex = aura.get_audio_data(chunk_buffer.strip())
                     
                     if vocal_hex:
                         inject_isolated_audio(vocal_hex, audio_counter)
                         
-                        # --- OPTIMIZED ANTI-OVERLAP CALCULATION ---
-                        # Faster processing means we need tighter, more accurate wait times.
+                        # --- ENHANCED DYNAMIC SYNC LOGIC ---
+                        # Calculating phonological weight for all Class 1-12 subjects.
                         
-                        # Identifying math density for dynamic wait.
+                        # Detect math symbols for specialized timing
                         math_symbols = re.findall(r'[0-9\+\-\=\^\/x²³\(\)]', chunk_buffer)
                         complexity_score = len(math_symbols)
                         text_length = len(chunk_buffer)
                         
-                        # NEW SPEED TUNING:
-                        # Character multiplier reduced for speed, but symbol pause remains stable.
-                        timing_multiplier = 0.082 
-                        extra_symbol_pause = complexity_score * 0.25
+                        # Multiplier adjustment for +10% rate in engine
+                        # Standard char speed: 0.082s. Math symbol speed: 0.3s.
+                        timing_multiplier = 0.082
+                        extra_symbol_pause = complexity_score * 0.30
                         
-                        # Dynamic Safety Margin: Shorter for plain text, longer for equations.
-                        safety_margin = 0.95 if complexity_score == 0 else 1.2
+                        # FINAL BLOCKING CALCULATION:
+                        # (Chars * Speed) + (Math Overhead) + Buffer (1.0s for fast processing)
+                        # Reduced from 1.1s to 1.0s for the new faster engine.
+                        calculated_wait = (text_length * timing_multiplier) + extra_symbol_pause + 1.0
                         
-                        calculated_wait = (text_length * timing_multiplier) + extra_symbol_pause + safety_margin
-                        
+                        # Execution Pause: Locks the next chunk until current is spoken.
                         time.sleep(calculated_wait)
                     
                     chunk_buffer = "" 
             else:
                 full_transcription += text_fragment
                 chunk_buffer += text_fragment
+                # Scholarly typing effect for visual engagement.
                 ui_anchor.markdown(f'<div class="chat-container"><b>Gyan Setu:</b> {full_transcription}▒</div>', unsafe_allow_html=True)
         
+        # UI Stabilization: Cleaning up the final response.
         ui_anchor.markdown(f'<div class="chat-container"><b>Gyan Setu:</b> {full_transcription}</div>', unsafe_allow_html=True)
         
+        # Update session history for contextual continuity.
         st.session_state.messages.append({"role": "user", "content": query_voice})
         st.session_state.messages.append({"role": "assistant", "content": full_transcription})
 
 else:
+    # Standby Interface: Welcoming the student to the platform.
     st.markdown("""
         <div style="text-align:center; padding:60px;">
-            <div style="color:#1e293b; font-family:Orbitron; letter-spacing:5px; font-weight:900; font-size:20px;">
-                SYSTEM STANDBY
+            <div style="color:#00fbff; font-family:Orbitron; letter-spacing:5px; font-weight:900; font-size:22px; text-shadow: 0 0 15px rgba(0, 251, 255, 0.4);">
+                SYSTEM ONLINE: GYAN SETU
             </div>
-            <div style="color:#00fbff; font-family:Rajdhani; font-size:24px; opacity:0.6; margin-top:10px;">
-                Ready for Academic Inquiries (Class 1-12)
+            <div style="color:#94a3b8; font-family:Rajdhani; font-size:20px; margin-top:10px;">
+                Ready for Class 1-12 Academic Mentorship
             </div>
         </div>
     """, unsafe_allow_html=True)
+
+# --- END OF V12 MASTER UI ---
