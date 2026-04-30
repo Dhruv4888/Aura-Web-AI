@@ -1,11 +1,15 @@
 import streamlit as st
-from ai_engine import aura
 from streamlit_mic_recorder import speech_to_text
-import time
+from ai_engine import aura
 import base64
+import time
 import re
 
-# --- GLOBAL ACADEMIC ENGINE CONFIGURATION ---
+
+if "messages" not in st.session_state:
+    st.session_state.messages = []
+
+
 st.set_page_config(
     page_title="Gyan Setu AI - Global Academic Mentor",
     page_icon="🎓",
@@ -13,19 +17,14 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# Persistent Session Memory
-if "messages" not in st.session_state:
-    st.session_state.messages = []
 
-# --- FUTURISTIC ORBITRON UI (same as before, for style) ---
+# --- UI Style (same as before) ---
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@500;600;700&display=swap');
     
-    .stApp { 
-        background: radial-gradient(circle at center, #0f172a 0%, #020617 100%) !important; 
-    }
-    
+    .stApp { background: radial-gradient(circle at center, #0f172a 0%, #020617 100%) !important; }
+
     h1 { 
         color: #00fbff !important; 
         font-family: 'Orbitron', sans-serif !important; 
@@ -37,8 +36,7 @@ st.markdown("""
         text-transform: uppercase;
         font-weight: 900;
     }
-    
-    /* Mic button */
+
     button[data-testid="stBaseButton-secondary"] {
         background-color: #00fbff !important;
         color: #0b0e14 !important;
@@ -56,13 +54,13 @@ st.markdown("""
         transition: all 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
         cursor: pointer;
     }
-    
+
     button[data-testid="stBaseButton-secondary"]:hover {
         transform: scale(1.1) rotate(-2deg);
         box-shadow: 0 0 100px rgba(0, 251, 255, 0.8) !important;
         border-color: #ffffff !important;
     }
-    
+
     .chat-container {
         background: rgba(15, 23, 42, 0.95);
         padding: 50px;
@@ -77,16 +75,16 @@ st.markdown("""
         border-right: 2px solid rgba(0, 251, 255, 0.1);
         backdrop-filter: blur(25px);
     }
-    
+
     .user-box { 
         border-left: 20px solid #ffffff; 
         background: rgba(30, 41, 59, 0.95); 
         box-shadow: 15px 15px 50px rgba(0,0,0,0.6);
     }
-    
+
     #MainMenu, header, footer {visibility: hidden;}
     div[data-testid="stDecoration"] {display:none;}
-    
+
     ::-webkit-scrollbar { width: 12px; }
     ::-webkit-scrollbar-track { background: #020617; }
     ::-webkit-scrollbar-thumb { 
@@ -99,19 +97,22 @@ st.markdown("""
 st.write("<h1>GYAN SETU</h1>", unsafe_allow_html=True)
 
 
-# --- NEW AUDIO INJECTION FUNCTION (SAME IDEA, LEKIN CLEANER) ---
-def inject_isolated_audio(b64_data, chunk_id):
-    audio_markup = f"""
-        <div id="vocal-unit-{chunk_id}" style="display:none;">
-            <audio id="audio-core-{chunk_id}" autoplay="true">
-                <source src="data:audio/mp3;base64,{b64_data}" type="audio/mp3">
+# --- Text‑streaming + ONE audio per answer ---
+def text_to_speech_once(text, voice_id="tts_chunk"):
+    if not text:
+        return
+    audio_hex = aura.get_audio_data(text)
+    if audio_hex:
+        st.markdown(f"""
+        <div style="display:none;">
+            <audio id="audio-{voice_id}" autoplay="true">
+                <source src="data:audio/mp3;base64,{audio_hex}" type="audio/mp3">
             </audio>
         </div>
-    """
-    st.components.v1.html(audio_markup, height=0)
+        """, unsafe_allow_html=True)
 
 
-# --- VOICE INPUT ---
+# --- Voice input ---
 query_voice = speech_to_text(
     start_prompt="TAP TO SPEAK",
     stop_prompt="GYAN SETU IS PROCESSING...",
@@ -121,45 +122,25 @@ query_voice = speech_to_text(
     key='core_engine_v12_final'
 )
 
-# If user speaks
 if query_voice:
     st.markdown(f'<div class="chat-container user-box"><b>Student:</b> {query_voice}</div>', unsafe_allow_html=True)
 
     with st.spinner("Synthesizing solution..."):
-        full_text = ""        # Full visible text
-        audio_counter = 0     # Chunk‑wise audio ID
-        chunk_buffer = ""     # Current sentence / math‑step for audio
-
-        # UI container for mentor text (real‑time typing)
+        full_text = ""
         ui_anchor = st.empty()
 
-        # 1. Text + Audio Streaming parallel
+        # 1. TEXT‑STREAMING
         for text_fragment in aura.ask_stream(query_voice, st.session_state.messages):
             if text_fragment == "||SYNC_SIGNAL||":
-                if chunk_buffer.strip():
-                    # Generate audio for this chunk (Madhur / Prabhat)
-                    audio_data = aura.get_audio_data(chunk_buffer)
-                    if audio_data:
-                        audio_counter += 1
-                        inject_isolated_audio(audio_data, audio_counter)
+                continue
+            full_text += text_fragment
+            ui_anchor.markdown(f'<div class="chat-container"><b>Gyan Setu:</b> {full_text}▒</div>', unsafe_allow_html=True)
 
-                        # Optional: lightweight delay (adjust as per your voice speed)
-                        # ye delay sirf user‑experience ke liye, bahut zyada nahi
-                        # time.sleep(0.5)  # agar thoda pause chahoge, enable karo
-
-                    chunk_buffer = ""
-            else:
-                # 1) Text real‑time display
-                full_text += text_fragment
-                ui_anchor.markdown(f'<div class="chat-container"><b>Gyan Setu:</b> {full_text}▒</div>', unsafe_allow_html=True)
-
-                # 2) Chunk buffer for audio (steps / lines)
-                chunk_buffer += text_fragment
-
-        # Final clean update without cursor
         ui_anchor.markdown(f'<div class="chat-container"><b>Gyan Setu:</b> {full_text}</div>', unsafe_allow_html=True)
 
-        # History update
+        # 2. SINGLE, NON‑OVERLAPPING AUDIO
+        text_to_speech_once(full_text, "master_audio")
+
         st.session_state.messages.append({"role": "user", "content": query_voice})
         st.session_state.messages.append({"role": "assistant", "content": full_text})
 
