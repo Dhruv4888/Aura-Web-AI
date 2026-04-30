@@ -1,3 +1,5 @@
 streamlit
 groq
+edge-tts
+asyncio
 streamlit-mic-recorder
