@@ -4,29 +4,62 @@ from streamlit_mic_recorder import speech_to_text
 import streamlit.components.v1 as components
 import base64
 import threading
+# ADD THESE LINES at top after imports:
+import threading
 import queue
-import time
-from threading import Thread
 
-# --- CONFIG (Same beautiful UI) ---
-st.set_page_config(page_title="Gyan Setu AI - TRUE STREAMING", page_icon="🎓", layout="centered")
+# Global TTS queue
+tts_queue = queue.Queue()
 
-if "messages" not in st.session_state:
-    st.session_state.messages = []
+# FIXED TTS WORKER - START ON INIT
+def tts_processor():
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    while True:
+        try:
+            text_chunk, chunk_id = tts_queue.get(timeout=2)
+            clean_text = aura.clean_text_for_speech(text_chunk)
+            if len(clean_text) < 5: 
+                tts_queue.task_done()
+                continue
+                
+            voice = "hi-IN-MadhurNeural" if aura.is_hindi(clean_text) else "en-IN-PrabhatNeural"
+            communicate = edge_tts.Communicate(clean_text, voice, rate="+10%")
+            
+            audio_data = b""
+            for chunk in communicate.stream():
+                if chunk["type"] == "audio":
+                    audio_data += chunk["data"]
+                    if len(audio_data) > 2000:
+                        # IMMEDIATE PLAYBACK
+                        st.components.v1.html(f"""
+                        <audio autoplay style='display:none'>
+                            <source src='data:audio/wav;base64,{base64.b64encode(audio_data).decode()}' type='audio/wav'>
+                        </audio>
+                        """, height=0)
+                        audio_data = b""
+            
+            if audio_data:
+                st.components.v1.html(f"""
+                <audio autoplay style='display:none'>
+                    <source src='data:audio/wav;base64,{base64.b64encode(audio_data).decode()}' type='audio/wav'>
+                </audio>
+                """, height=0)
+            tts_queue.task_done()
+        except:
+            continue
 
-st.markdown("""
-    <style>
-    /* SAME COSMIC UI - No changes needed */
-    @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@500;600;700&display=swap');
-    .stApp { background: radial-gradient(circle at center, #0f172a 0%, #020617 100%) !important; }
-    h1 { color: #00fbff !important; font-family: 'Orbitron', sans-serif !important; text-align: center !important; font-size: 65px !important; text-shadow: 0 0 40px #00fbff; margin-top: -85px; letter-spacing: 12px; font-weight: 900; }
-    /* ... (keep all your existing CSS exactly same) ... */
-    .streaming-indicator { color: #00fbff; font-family: 'Orbitron'; font-weight: 900; text-shadow: 0 0 10px #00fbff; animation: pulse 0.5s infinite; }
-    @keyframes pulse { 0%,100%{opacity:1;} 50%{opacity:0.5;} }
-    </style>
-    """, unsafe_allow_html=True)
+# START THREAD ON LOAD
+if 'tts_running' not in st.session_state:
+    tts_thread = threading.Thread(target=tts_processor, daemon=True)
+    tts_thread.start()
+    st.session_state.tts_running = True
 
-st.write("<h1>GYAN SETU</h1>", unsafe_allow_html=True)
+# IN STREAMING LOOP - REPLACE sentence TTS part with:
+if any(p in text_token for p in ['.', '!', '?', '।']):
+    sentence = full_response.split('.')[-1].strip()
+    if len(sentence) > 8:
+        tts_queue.put((sentence, chunk_id))  # QUEUE FOR INSTANT VOICE
 
 # --- WEB AUDIO API (Same) ---
 def init_audio_player():
