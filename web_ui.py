@@ -1,175 +1,173 @@
 import streamlit as st
 from ai_engine import aura
 from streamlit_mic_recorder import speech_to_text
-import streamlit.components.v1 as components
+import time
 import base64
-import threading
-# ADD THESE LINES at top after imports:
-import threading
-import queue
+import re
 
-# Global TTS queue
-tts_queue = queue.Queue()
+# --- GLOBAL ACADEMIC ENGINE CONFIGURATION ---
+st.set_page_config(
+    page_title="Gyan Setu AI - Global Academic Mentor",
+    page_icon="🎓",
+    layout="centered",
+    initial_sidebar_state="collapsed"
+)
 
-# FIXED TTS WORKER - START ON INIT
-def tts_processor():
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
-    while True:
-        try:
-            text_chunk, chunk_id = tts_queue.get(timeout=2)
-            clean_text = aura.clean_text_for_speech(text_chunk)
-            if len(clean_text) < 5: 
-                tts_queue.task_done()
-                continue
-                
-            voice = "hi-IN-MadhurNeural" if aura.is_hindi(clean_text) else "en-IN-PrabhatNeural"
-            communicate = edge_tts.Communicate(clean_text, voice, rate="+10%")
-            
-            audio_data = b""
-            for chunk in communicate.stream():
-                if chunk["type"] == "audio":
-                    audio_data += chunk["data"]
-                    if len(audio_data) > 2000:
-                        # IMMEDIATE PLAYBACK
-                        st.components.v1.html(f"""
-                        <audio autoplay style='display:none'>
-                            <source src='data:audio/wav;base64,{base64.b64encode(audio_data).decode()}' type='audio/wav'>
-                        </audio>
-                        """, height=0)
-                        audio_data = b""
-            
-            if audio_data:
-                st.components.v1.html(f"""
-                <audio autoplay style='display:none'>
-                    <source src='data:audio/wav;base64,{base64.b64encode(audio_data).decode()}' type='audio/wav'>
-                </audio>
-                """, height=0)
-            tts_queue.task_done()
-        except:
-            continue
+# Persistent Session Memory
+if "messages" not in st.session_state:
+    st.session_state.messages = []
 
-# START THREAD ON LOAD
-if 'tts_running' not in st.session_state:
-    tts_thread = threading.Thread(target=tts_processor, daemon=True)
-    tts_thread.start()
-    st.session_state.tts_running = True
+# --- FUTURISTIC ORBITRON UI (same as before, for style) ---
+st.markdown("""
+    <style>
+    @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@500;600;700&display=swap');
+    
+    .stApp { 
+        background: radial-gradient(circle at center, #0f172a 0%, #020617 100%) !important; 
+    }
+    
+    h1 { 
+        color: #00fbff !important; 
+        font-family: 'Orbitron', sans-serif !important; 
+        text-align: center !important; 
+        font-size: 65px !important; 
+        text-shadow: 0 0 40px #00fbff, 0 0 15px rgba(0, 251, 255, 0.5);
+        margin-top: -85px;
+        letter-spacing: 12px;
+        text-transform: uppercase;
+        font-weight: 900;
+    }
+    
+    /* Mic button */
+    button[data-testid="stBaseButton-secondary"] {
+        background-color: #00fbff !important;
+        color: #0b0e14 !important;
+        border-radius: 50% !important;
+        width: 175px !important;
+        height: 175px !important;
+        border: 15px solid #1e293b !important;
+        font-family: 'Orbitron', sans-serif !important;
+        font-weight: 900 !important;
+        margin: 45px auto !important;
+        display: flex !important;
+        justify-content: center !important;
+        align-items: center !important;
+        box-shadow: 0 0 70px rgba(0, 251, 255, 0.35) !important;
+        transition: all 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
+        cursor: pointer;
+    }
+    
+    button[data-testid="stBaseButton-secondary"]:hover {
+        transform: scale(1.1) rotate(-2deg);
+        box-shadow: 0 0 100px rgba(0, 251, 255, 0.8) !important;
+        border-color: #ffffff !important;
+    }
+    
+    .chat-container {
+        background: rgba(15, 23, 42, 0.95);
+        padding: 50px;
+        border-radius: 35px;
+        border-left: 20px solid #00fbff;
+        color: #f1f5f9;
+        margin-top: 40px;
+        font-family: 'Rajdhani', sans-serif;
+        line-height: 2.1;
+        font-size: 28px;
+        box-shadow: 30px 30px 80px rgba(0,0,0,0.85);
+        border-right: 2px solid rgba(0, 251, 255, 0.1);
+        backdrop-filter: blur(25px);
+    }
+    
+    .user-box { 
+        border-left: 20px solid #ffffff; 
+        background: rgba(30, 41, 59, 0.95); 
+        box-shadow: 15px 15px 50px rgba(0,0,0,0.6);
+    }
+    
+    #MainMenu, header, footer {visibility: hidden;}
+    div[data-testid="stDecoration"] {display:none;}
+    
+    ::-webkit-scrollbar { width: 12px; }
+    ::-webkit-scrollbar-track { background: #020617; }
+    ::-webkit-scrollbar-thumb { 
+        background: linear-gradient(#00fbff, #005f61); 
+        border-radius: 10px; 
+    }
+    </style>
+""", unsafe_allow_html=True)
 
-# IN STREAMING LOOP - REPLACE sentence TTS part with:
-if any(p in text_token for p in ['.', '!', '?', '।']):
-    sentence = full_response.split('.')[-1].strip()
-    if len(sentence) > 8:
-        tts_queue.put((sentence, chunk_id))  # QUEUE FOR INSTANT VOICE
+st.write("<h1>GYAN SETU</h1>", unsafe_allow_html=True)
 
-# --- WEB AUDIO API (Same) ---
-def init_audio_player():
-    components.html("""
-    <script>
-    let audioCtx, queue=[],playing=false;
-    function initCtx(){if(!audioCtx)audioCtx=new(window.AudioContext||window.webkitAudioContext)();}
-    window.playAudio=function(b64,id){initCtx();let bin=atob(b64),bytes=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)bytes[i]=bin.charCodeAt(i);queue.push({data:bytes,id});playNext();}
-    async function playNext(){if(playing||queue.length==0)return;playing=true;let chunk=queue.shift();try{let buf=await audioCtx.decodeAudioData(chunk.data.buffer.slice(0)),src=audioCtx.createBufferSource();src.buffer=buf;src.connect(audioCtx.destination);src.onended=()=>{playing=false;playNext()};src.start();}catch(e){playing=false;playNext();}}
-    </script><div style='text-align:center;color:#00fbff;font-family:Orbitron;font-size:20px;'>🎤 LIVE AUDIO READY</div>
-    """, height=80)
 
-if 'audio_init' not in st.session_state:
-    init_audio_player()
-    st.session_state.audio_init = True
+# --- NEW AUDIO INJECTION FUNCTION (SAME IDEA, LEKIN CLEANER) ---
+def inject_isolated_audio(b64_data, chunk_id):
+    audio_markup = f"""
+        <div id="vocal-unit-{chunk_id}" style="display:none;">
+            <audio id="audio-core-{chunk_id}" autoplay="true">
+                <source src="data:audio/mp3;base64,{b64_data}" type="audio/mp3">
+            </audio>
+        </div>
+    """
+    st.components.v1.html(audio_markup, height=0)
 
-# --- TTS THREADING SYSTEM ---
-audio_queue = queue.Queue()
-def tts_worker():
-    """Background TTS processor"""
-    while True:
-        try:
-            text_data = audio_queue.get(timeout=1)
-            if text_data is None: break
-            text, chunk_id = text_data
-            # Generate audio synchronously
-            clean_text = aura.clean_text_for_speech(text)
-            voice = "hi-IN-MadhurNeural" if aura.is_hindi(clean_text) else "en-IN-PrabhatNeural"
-            
-            loop = asyncio.new_event_loop()
-            asyncio.set_event_loop(loop)
-            communicate = edge_tts.Communicate(clean_text, voice, rate="+10%", pitch="-2Hz")
-            
-            audio_buffer = b""
-            for chunk in communicate.stream():
-                if chunk["type"] == "audio":
-                    audio_buffer += chunk["data"]
-                    if len(audio_buffer) > 1500:  # Stream chunks
-                        components.html(f"""
-                        <script>playAudio('{base64.b64encode(audio_buffer).decode()}','{chunk_id}');</script>
-                        """, height=0)
-                        audio_buffer = b""
-            
-            if audio_buffer:
-                components.html(f"""
-                <script>playAudio('{base64.b64encode(audio_buffer).decode()}','{chunk_id}');</script>
-                """, height=0)
-            loop.close()
-            audio_queue.task_done()
-        except queue.Empty:
-            continue
 
-# Start TTS thread
-if 'tts_thread' not in st.session_state:
-    tts_thread = Thread(target=tts_worker, daemon=True)
-    tts_thread.start()
-    st.session_state.tts_thread = tts_thread
+# --- VOICE INPUT ---
+query_voice = speech_to_text(
+    start_prompt="TAP TO SPEAK",
+    stop_prompt="GYAN SETU IS PROCESSING...",
+    language='en-IN',
+    use_container_width=True,
+    just_once=True,
+    key='core_engine_v12_final'
+)
 
-# --- MIC INPUT ---
-query_voice = speech_to_text(start_prompt="TAP TO SPEAK", stop_prompt="🔥 LIVE STREAMING...", language='en-IN', use_container_width=True, just_once=True)
-
+# If user speaks
 if query_voice:
     st.markdown(f'<div class="chat-container user-box"><b>Student:</b> {query_voice}</div>', unsafe_allow_html=True)
-    
-    # *** TRUE SYNCHRONOUS STREAMING (NO ASYNC ERRORS!) ***
-    response_placeholder = st.empty()
-    response_placeholder.markdown('<div class="chat-container streaming-indicator"><b>Gyan Setu:</b> █ LIVE STREAMING START █</div>', unsafe_allow_html=True)
-    
-    full_response = ""
-    chunk_id = 0
-    
-    # Groq streaming (synchronous generator)
-    for text_token in aura.ask_stream(query_voice, st.session_state.messages):
-        full_response += text_token
-        
-        # 1. INSTANT TEXT DISPLAY
-        response_placeholder.markdown(
-            f'<div class="chat-container"><b>Gyan Setu:</b> {full_response}█</div>', 
-            unsafe_allow_html=True
-        )
-        
-        # 2. INSTANT VOICE (sentence detection)
-        if any(p in text_token for p in ['.', '!', '?', '।', '\n']):
-            sentence = full_response.split('.')[-1].strip() if '.' in full_response else full_response
-            if len(sentence) > 10:
-                chunk_id += 1
-                # Threaded TTS - ZERO BLOCKING
-                audio_queue.put((sentence, f"chunk_{chunk_id}"))
-    
-    # Final sentence
-    if full_response and len(full_response.split()[-10:]) > 3:
-        audio_queue.put((full_response.split('.')[-1], f"final_{chunk_id}"))
-    
-    # Clean final display
-    response_placeholder.markdown(f'<div class="chat-container"><b>Gyan Setu:</b> {full_response}</div>', unsafe_allow_html=True)
-    
-    # History
-    st.session_state.messages.append({"role": "user", "content": query_voice})
-    st.session_state.messages.append({"role": "assistant", "content": full_response})
+
+    with st.spinner("Synthesizing solution..."):
+        full_text = ""        # Full visible text
+        audio_counter = 0     # Chunk‑wise audio ID
+        chunk_buffer = ""     # Current sentence / math‑step for audio
+
+        # UI container for mentor text (real‑time typing)
+        ui_anchor = st.empty()
+
+        # 1. Text + Audio Streaming parallel
+        for text_fragment in aura.ask_stream(query_voice, st.session_state.messages):
+            if text_fragment == "||SYNC_SIGNAL||":
+                if chunk_buffer.strip():
+                    # Generate audio for this chunk (Madhur / Prabhat)
+                    audio_data = aura.get_audio_data(chunk_buffer)
+                    if audio_data:
+                        audio_counter += 1
+                        inject_isolated_audio(audio_data, audio_counter)
+
+                        # Optional: lightweight delay (adjust as per your voice speed)
+                        # ye delay sirf user‑experience ke liye, bahut zyada nahi
+                        # time.sleep(0.5)  # agar thoda pause chahoge, enable karo
+
+                    chunk_buffer = ""
+            else:
+                # 1) Text real‑time display
+                full_text += text_fragment
+                ui_anchor.markdown(f'<div class="chat-container"><b>Gyan Setu:</b> {full_text}▒</div>', unsafe_allow_html=True)
+
+                # 2) Chunk buffer for audio (steps / lines)
+                chunk_buffer += text_fragment
+
+        # Final clean update without cursor
+        ui_anchor.markdown(f'<div class="chat-container"><b>Gyan Setu:</b> {full_text}</div>', unsafe_allow_html=True)
+
+        # History update
+        st.session_state.messages.append({"role": "user", "content": query_voice})
+        st.session_state.messages.append({"role": "assistant", "content": full_text})
 
 else:
     st.markdown("""
-    <div style="text-align:center;padding:60px;">
-        <div style="color:#00fbff;font-family:Orbitron;letter-spacing:5px;font-weight:900;font-size:22px;text-shadow:0 0 15px #00fbff;">
-            GYAN SETU - TRUE STREAMING v3.0 ✅
+        <div style="text-align:center; padding:60px;">
+            <div style="color:#00fbff; font-family:Orbitron; letter-spacing:5px; font-weight:900; font-size:22px; text-shadow: 0 0 15px rgba(0, 251, 255, 0.4);">
+                SYSTEM ONLINE: GYAN SETU
+            </div>
         </div>
-        <div style="color:#94a3b8;font-size:18px;margin-top:20px;">
-            👆 Tap mic → Token-by-token text + INSTANT voice<br>
-            • MadhurNeural (Hindi) • PrabhatNeural (English)<br>
-            • 100% sync • ZERO errors • NO delays
-        </div>
-    </div>
     """, unsafe_allow_html=True)
