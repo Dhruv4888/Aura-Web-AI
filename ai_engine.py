@@ -26,9 +26,12 @@ class AuraAssistant:
 
     def is_hindi(self, text):
         """
-        Devanagari script detection.
-        Optimized regex for faster linguistic scanning.
+        Advanced Devanagari script detection.
+        Scans for the specific unicode range used in Hindi.
         """
+        if not text:
+            return False
+        # Unicode range for Devanagari: \u0900 to \u097F
         return bool(re.search(r'[\u0900-\u097F]', text))
 
     def clean_text_for_speech(self, text):
