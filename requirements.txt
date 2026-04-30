@@ -1,5 +1,5 @@
-streamlit
-groq
-edge-tts
+streamlit==1.38.0
+groq==0.4.1
+edge-tts==6.1.12
+streamlit-mic-recorder==0.2.2
 asyncio
-streamlit-mic-recorder
