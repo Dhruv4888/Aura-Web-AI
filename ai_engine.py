@@ -26,9 +26,12 @@ class AuraAssistant:
 
     def is_hindi(self, text):
         """
-        Devanagari script detection.
-        Optimized regex for faster linguistic scanning.
+        Advanced Devanagari script detection.
+        Scans for the specific unicode range used in Hindi.
         """
+        if not text:
+            return False
+        # Unicode range for Devanagari: \u0900 to \u097F
         return bool(re.search(r'[\u0900-\u097F]', text))
 
     def clean_text_for_speech(self, text):
@@ -130,19 +133,28 @@ class AuraAssistant:
         The Reasoning Core (STRICT TERMINATION LOGIC). 
         Prevents infinite generation and historical repetition.
         """
+        # Improved Detection: Direct Hindi characters or common Hinglish markers
         is_hindi_in = self.is_hindi(query)
-        # Dynamic language detection (English/Hindi/Hinglish)
-        forced_lang = "HINDI (Devanagari Script)" if (is_hindi_in or " btao" in query.lower() or " hai" in query.lower() or " tha" in query.lower()) else "ENGLISH"
+        hinglish_markers = [" btao", " batiye", " hai", " tha", " batao", " kya", " kaise"]
+        is_hinglish = any(m in query.lower() for m in hinglish_markers)
         
-        # SYSTEM PROTOCOL - STRICTEST VERSION
+        # Solidifying the forced language protocol
+        if is_hindi_in or is_hinglish:
+            forced_lang = "HINDI (Strictly Devanagari Script)"
+            language_style = "Use Shudh Hindi, strictly avoid English alphabets in response."
+        else:
+            forced_lang = "ENGLISH"
+            language_style = "Use formal academic English."
+        
+        # SYSTEM PROTOCOL - REINFORCED VERSION
         system_instruction = f"""You are 'Gyan Setu', a Senior Academic Mentor.
-        RESPONSE LIMIT PROTOCOL:
-        1. CONTENT: Answer ONLY the specific question asked. Do not provide extra context or related topics.
-        2. LENGTH: Maximum 3 to 5 logical sentences. If it's a math problem, show steps and STOP immediately after the final answer.
-        3. TERMINATION: Do not ask follow-up questions. Once the answer is complete, end the response.
-        4. LANGUAGE: Strict {forced_lang}. 
+        RESPONSE PROTOCOL:
+        1. LANGUAGE: {forced_lang}. {language_style}
+        2. CONTENT: Answer ONLY the specific academic question. No conversational filler.
+        3. LENGTH: Maximum 3 to 5 logical sentences. For Math, show steps clearly.
+        4. TERMINATION: Do not ask follow-up questions. Finish and STOP.
         5. SYNC: Put a period (.) or (।) after EVERY step or sentence to signal the audio engine.
-        6. PERSONA: You are a male teacher. Use formal language."""
+        6. PERSONA: You are a male teacher. Use formal, authoritative language."""
 
         messages = [{"role": "system", "content": system_instruction}]
         
@@ -155,17 +167,17 @@ class AuraAssistant:
                 messages=messages, 
                 model=self.model,
                 stream=True,
-                temperature=0.1,
-                max_tokens=450, # Tightened limit to force conciseness
-                stop=["Student Query:", "Student:", "\n\n\n"] # Hard stop sequences
+                temperature=0.1, # Low temp for high precision
+                max_tokens=450, 
+                stop=["Student Query:", "Student:", "\n\n\n"] 
             )
             
             for chunk in completion:
                 content = chunk.choices[0].delta.content
                 if content:
                     yield content
-                    # Signal for vocal block separation
-                    if any(p in content for p in ['.', '!', '?', '।', '\n', '=', ':', ';']):
+                    # Signal for vocal block separation - Simplified and Faster
+                    if any(p in content for p in ['.', '!', '?', '।', '\n', ':', ';']):
                         yield "||SYNC_SIGNAL||"
                         
         except Exception as e:
