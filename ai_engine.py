@@ -6,16 +6,12 @@ import re
 import streamlit as st
 import base64
 import io
+import json
 
 class AuraAssistant:
     def __init__(self):
-        """
-        Gyan Setu Core Engine Initialization.
-        Focus: Maximum stability, high-speed response, and strict termination.
-        """
         self.model = "llama-3.3-70b-versatile"
         try:
-            # High-priority API key retrieval for faster authentication
             if "GROQ_API_KEY" in st.secrets:
                 self.api_key = st.secrets["GROQ_API_KEY"]
                 self.client = Groq(api_key=self.api_key)
@@ -25,63 +21,29 @@ class AuraAssistant:
             st.error(f"Critical Boot Failure: {e}")
 
     def is_hindi(self, text):
-        """
-        Advanced Devanagari script detection.
-        Scans for the specific unicode range used in Hindi.
-        """
         if not text:
             return False
-        # Unicode range for Devanagari: \u0900 to \u097F
         return bool(re.search(r'[\u0900-\u097F]', text))
 
     def clean_text_for_speech(self, text):
-        """
-        ULTIMATE PHONETIC RE-ENGINEERING (STRICT MENTOR TONE):
-        Optimized to handle complex Math, Science, and History narratives.
-        """
-        # Quick-strip technical artifacts and formatting
-        text = re.sub(r'\[WIKI_SEARCH:.*?\]', '', text)
+        text = re.sub(r'\\[WIKI_SEARCH:.*?\\]', '', text)
         text = text.replace("$", "").replace("#", "").replace("*", "").replace("`", "")
-        text = re.sub(r'\\text\{.*?\}', '', text) 
+        text = re.sub(r'\\\\text\\{.*?\\}', '', text) 
         
-        # High-Speed Mathematical Phonetic Mapping
-        # Focused on clean breaks to allow the sync engine to process blocks.
         math_map = {
-            "²": " square, ",
-            "^2": " square, ",
-            "³": " cube, ",
-            "^3": " cube, ",
-            "x²": " x square, ",
-            "x^2": " x square, ",
-            " + ": " plus ",
-            " - ": " minus ",
-            " = ": " equals to ",
-            " / ": " divided by ",
-            " * ": " ", 
-            " x ": " ", 
-            "2x": " 2 x ", 
-            "3x": " 3 x ",
-            "4x": " 4 x ",
-            "5x": " 5 x ",
-            "√": " square root of ",
-            "π": " pi ",
-            "(": " bracket start ",
-            ")": " bracket close "
+            "²": " square, ", "^2": " square, ", "³": " cube, ", "^3": " cube, ",
+            "x²": " x square, ", "x^2": " x square, ", " + ": " plus ", " - ": " minus ",
+            " = ": " equals to ", " / ": " divided by ", "√": " square root of ", "π": " pi ",
+            "(": " bracket start ", ")": " bracket close "
         }
         
-        # Batch replacement for high-concurrency performance
         for symbol, word in math_map.items():
             text = text.replace(symbol, word)
 
-        # Senior Mentor Persona Correction (Strictly Male Academic Voice)
         gender_fix = {
-            "sakti hoon": "sakta hoon", 
-            "karti hoon": "karta hoon", 
-            "rahi hoon": "raha hoon",
-            "huu": "hoon",
-            "kar rahi hun": "kar raha hoon",
-            "hun ": "hoon ",
-            "main ek machine hoon": "Main Gyan Setu hoon",
+            "sakti hoon": "sakta hoon", "karti hoon": "karta hoon", 
+            "rahi hoon": "raha hoon", "huu": "hoon", "kar rahi hun": "kar raha hoon",
+            "hun ": "hoon ", "main ek machine hoon": "Main Gyan Setu hoon",
             "main ek ai hoon": "Main Gyan Setu hoon"
         }
         
@@ -90,55 +52,67 @@ class AuraAssistant:
             
         return text
 
-    async def _generate_voice_bytes(self, text):
-        """
-        Asynchronous Voice Synthesis.
-        Configured for 1.1x speed (Academic Efficiency) with authoritative pitch.
-        """
+    async def _generate_voice_stream(self, text, chunk_id):
+        """TRUE STREAMING TTS - chunk by chunk audio"""
         selected_voice = "hi-IN-MadhurNeural" if self.is_hindi(text) else "en-IN-PrabhatNeural"
-        
-        # Rate slightly increased (+10%) to match the faster generation logic
         communicate = edge_tts.Communicate(text, selected_voice, rate="+10%", pitch="-2Hz")
         
         audio_data = b""
         async for chunk in communicate.stream():
             if chunk["type"] == "audio":
                 audio_data += chunk["data"]
-        return audio_data
+                # Stream small audio chunks immediately
+                if len(audio_data) > 1024:  # 1KB chunks
+                    yield base64.b64encode(audio_data).decode()
+                    audio_data = b""
+        
+        if audio_data:
+            yield base64.b64encode(audio_data).decode()
 
-    def get_audio_data(self, text):
-        """
-        High-Concurrency Audio Interface.
-        Converts logical text blocks into base64 vocal packets.
-        """
-        clean_text = self.clean_text_for_speech(text)
-        if not clean_text.strip():
-            return None
+    async def stream_audio_realtime(self, text_stream):
+        """Main streaming engine - text → audio sync"""
+        buffer = ""
+        audio_id = 0
+        
+        async for text_chunk in text_stream:
+            buffer += text_chunk
+            # Sentence boundary detection for natural breaks
+            if any(p in buffer for p in ['.', '!', '?', '।', '\n']):
+                clean_text = self.clean_text_for_speech(buffer.strip())
+                if clean_text:
+                    audio_id += 1
+                    async for audio_chunk in self._generate_voice_stream(clean_text, audio_id):
+                        yield {
+                            "type": "audio",
+                            "data": audio_chunk,
+                            "id": audio_id
+                        }
+                buffer = ""
             
-        try:
-            try:
-                loop = asyncio.get_event_loop()
-            except RuntimeError:
-                loop = asyncio.new_event_loop()
-                asyncio.set_event_loop(loop)
-            
-            audio_raw = loop.run_until_complete(self._generate_voice_bytes(clean_text))
-            return base64.b64encode(audio_raw).decode()
-        except Exception as e:
-            print(f"Vocal Processing Error: {e}")
-            return None
+            # Token-level visual streaming
+            yield {
+                "type": "text", 
+                "data": text_chunk
+            }
+        
+        # Final buffer
+        if buffer.strip():
+            clean_text = self.clean_text_for_speech(buffer.strip())
+            if clean_text:
+                audio_id += 1
+                async for audio_chunk in self._generate_voice_stream(clean_text, audio_id):
+                    yield {
+                        "type": "audio",
+                        "data": audio_chunk,
+                        "id": audio_id
+                    }
 
     def ask_stream(self, query, history):
-        """
-        The Reasoning Core (STRICT TERMINATION LOGIC). 
-        Prevents infinite generation and historical repetition.
-        """
-        # Improved Detection: Direct Hindi characters or common Hinglish markers
+        """Enhanced streaming with better sync signals"""
         is_hindi_in = self.is_hindi(query)
         hinglish_markers = [" btao", " batiye", " hai", " tha", " batao", " kya", " kaise"]
         is_hinglish = any(m in query.lower() for m in hinglish_markers)
         
-        # Solidifying the forced language protocol
         if is_hindi_in or is_hinglish:
             forced_lang = "HINDI (Strictly Devanagari Script)"
             language_style = "Use Shudh Hindi, strictly avoid English alphabets in response."
@@ -146,7 +120,6 @@ class AuraAssistant:
             forced_lang = "ENGLISH"
             language_style = "Use formal academic English."
         
-        # SYSTEM PROTOCOL - REINFORCED VERSION
         system_instruction = f"""You are 'Gyan Setu', a Senior Academic Mentor.
         RESPONSE PROTOCOL:
         1. LANGUAGE: {forced_lang}. {language_style}
@@ -157,8 +130,6 @@ class AuraAssistant:
         6. PERSONA: You are a male teacher. Use formal, authoritative language."""
 
         messages = [{"role": "system", "content": system_instruction}]
-        
-        # Optimized context window: Only 2 turns to prevent 'history looping'
         messages.extend(history[-2:]) 
         messages.append({"role": "user", "content": f"Student Query: {query}. (Provide a concise answer and stop.)"})
         
@@ -167,21 +138,26 @@ class AuraAssistant:
                 messages=messages, 
                 model=self.model,
                 stream=True,
-                temperature=0.1, # Low temp for high precision
+                temperature=0.1,
                 max_tokens=450, 
-                stop=["Student Query:", "Student:", "\n\n\n"] 
+                stop=["Student Query:", "Student:", "\\n\\n\\n"] 
             )
             
-            for chunk in completion:
-                content = chunk.choices[0].delta.content
-                if content:
-                    yield content
-                    # Signal for vocal block separation - Simplified and Faster
-                    if any(p in content for p in ['.', '!', '?', '।', '\n', ':', ';']):
-                        yield "||SYNC_SIGNAL||"
-                        
+            async def text_stream():
+                buffer = ""
+                for chunk in completion:
+                    content = chunk.choices[0].delta.content
+                    if content:
+                        buffer += content
+                        yield content
+                        if any(p in content for p in ['.', '!', '?', '।', '\n', ':', ';']):
+                            yield "||SYNC||"
+                
+                if buffer:
+                    yield buffer
+            
+            return text_stream()
         except Exception as e:
             yield f"Computational Failure: {str(e)}"
 
-# Global instance for UI integration
 aura = AuraAssistant()
