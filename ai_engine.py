@@ -1,3 +1,4 @@
+# ai_engine.py
 import os
 import asyncio
 import edge_tts
@@ -5,18 +6,12 @@ from groq import Groq
 import re
 import streamlit as st
 import base64
-import io
 
 
 class AuraAssistant:
     def __init__(self):
-        """
-        Gyan Setu Core Engine Initialization.
-        Focus: Maximum stability, high-speed response, and strict termination.
-        """
         self.model = "llama-3.3-70b-versatile"
         try:
-            # High-priority API key retrieval for faster authentication
             if "GROQ_API_KEY" in st.secrets:
                 self.api_key = st.secrets["GROQ_API_KEY"]
                 self.client = Groq(api_key=self.api_key)
@@ -26,27 +21,16 @@ class AuraAssistant:
             st.error(f"Critical Boot Failure: {e}")
 
     def is_hindi(self, text):
-        """
-        Advanced Devanagari script detection.
-        Scans for the specific unicode range used in Hindi.
-        """
         if not text:
             return False
-        # Unicode range for Devanagari: \u0900 - \u097F
         return bool(re.search(r'[\u0900-\u097F]', text))
 
     def clean_text_for_speech(self, text):
-        """
-        ULTIMATE PHONETIC RE-ENGINEERING (STRICT MENTOR TONE):
-        Optimized to handle complex Math, Science, and History narratives.
-        """
-        # Quick-strip technical artifacts and formatting
         text = re.sub(r'\[WIKI_SEARCH:.*?\]', '', text)
         text = text.replace("$", "").replace("#", "").replace("*", "").replace("`", "")
         text = re.sub(r'\\text{.*?}', '', text) 
 
-        # High-Speed Mathematical Phonetic Mapping
-        # Focused on clean breaks to allow the sync engine to process blocks.
+        # Math symbols
         math_map = {
             "²": " square, ",
             "^2": " square, ",
@@ -69,12 +53,10 @@ class AuraAssistant:
             "(": " bracket start ",
             ")": " bracket close "
         }
-
-        # Batch replacement for high-concurrency performance
         for symbol, word in math_map.items():
             text = text.replace(symbol, word)
 
-        # Senior Mentor Persona Correction (Strictly Male Academic Voice)
+        # Gender fix (male mentor)
         gender_fix = {
             "sakti hoon": "sakta hoon", 
             "karti hoon": "karta hoon", 
@@ -85,26 +67,16 @@ class AuraAssistant:
             "main ek machine hoon": "Main Gyan Setu hoon",
             "main ek ai hoon": "Main Gyan Setu hoon"
         }
-
         for wrong, right in gender_fix.items():
             text = text.replace(wrong, right)
-            
         return text
 
     async def _generate_voice_bytes(self, text):
-        """
-        Asynchronous Voice Synthesis.
-        Configured for 1.1x speed (Academic Efficiency) with authoritative pitch.
-        Returns raw audio bytes as they stream from Edge TTS.
-        """
         if not text.strip():
             return b""
 
         selected_voice = "hi-IN-MadhurNeural" if self.is_hindi(text) else "en-IN-PrabhatNeural"
-
-        # Rate slightly increased (+10%) to match the faster generation logic
         communicate = edge_tts.Communicate(text, selected_voice, rate="+10%", pitch="-2Hz")
-
         audio_data = b""
         async for chunk in communicate.stream():
             if chunk["type"] == "audio":
@@ -112,22 +84,15 @@ class AuraAssistant:
         return audio_data
 
     def get_audio_data(self, text):
-        """
-        High-Concurrency Audio Interface.
-        Converts logical text blocks into base64 vocal packets.
-        Now returns base64 audio suitable for web UI.
-        """
         clean_text = self.clean_text_for_speech(text)
         if not clean_text.strip():
             return None
-
         try:
             try:
                 loop = asyncio.get_event_loop()
             except RuntimeError:
                 loop = asyncio.new_event_loop()
                 asyncio.set_event_loop(loop)
-
             audio_raw = loop.run_until_complete(self._generate_voice_bytes(clean_text))
             if not audio_raw:
                 return None
@@ -137,17 +102,10 @@ class AuraAssistant:
             return None
 
     def ask_stream(self, query, history):
-        """
-        The Reasoning Core (STRICT TERMINATION LOGIC). 
-        Prevents infinite generation and historical repetition.
-        Returns a stream (generator) of text fragments + sync signals.
-        """
-        # Improved Detection: Direct Hindi characters or common Hinglish markers
         is_hindi_in = self.is_hindi(query)
         hinglish_markers = [" btao", " batiye", " hai", " tha", " batao", " kya", " kaise"]
         is_hinglish = any(m in query.lower() for m in hinglish_markers)
 
-        # Solidifying the forced language protocol
         if is_hindi_in or is_hinglish:
             forced_lang = "HINDI (Strictly Devanagari Script)"
             language_style = "Use Shudh Hindi, strictly avoid English alphabets in response."
@@ -155,7 +113,6 @@ class AuraAssistant:
             forced_lang = "ENGLISH"
             language_style = "Use formal academic English."
 
-        # SYSTEM PROTOCOL - REINFORCED VERSION
         system_instruction = f"""You are 'Gyan Setu', a Senior Academic Mentor.
         RESPONSE PROTOCOL:
         1. LANGUAGE: {forced_lang}. {language_style}
@@ -166,8 +123,6 @@ class AuraAssistant:
         6. PERSONA: You are a male teacher. Use formal, authoritative language."""
 
         messages = [{"role": "system", "content": system_instruction}]
-
-        # Optimized context window: Only 2 turns to prevent 'history looping'
         messages.extend(history[-2:])
         messages.append({"role": "user", "content": f"Student Query: {query}. (Provide a concise answer and stop.)"})
 
@@ -176,7 +131,7 @@ class AuraAssistant:
                 messages=messages,
                 model=self.model,
                 stream=True,
-                temperature=0.1,  # Low temp for high precision
+                temperature=0.1,
                 max_tokens=450,
                 stop=["Student Query:", "Student:", "\n\n\n"]
             )
@@ -184,17 +139,11 @@ class AuraAssistant:
             for chunk in completion:
                 content = chunk.choices[0].delta.content
                 if content:
-                    # 1) Yield text directly for streaming UI
                     yield content
-
-                    # 2) Signal for vocal block separation (for audio engine)
-                    # This is the main trigger for TTS chunks
                     if any(p in content for p in ['.', '!', '?', '।', '\n', ':', ';']):
                         yield "||SYNC_SIGNAL||"
-
         except Exception as e:
             yield f"Computational Failure: {str(e)}"
 
 
-# Global instance for UI integration
 aura = AuraAssistant()
