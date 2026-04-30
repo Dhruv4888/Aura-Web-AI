@@ -6,6 +6,7 @@ import streamlit.components.v1 as components
 import base64
 import json
 import time
+import re
 
 # --- GLOBAL ACADEMIC ENGINE CONFIGURATION ---
 st.set_page_config(
@@ -15,9 +16,10 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# Persistent Session Memory
 if "messages" not in st.session_state:
     st.session_state.messages = []
+if "final_responses" not in st.session_state:
+    st.session_state.final_responses = []
 
 st.markdown("""
     <style>
@@ -84,6 +86,20 @@ st.markdown("""
         box-shadow: 15px 15px 50px rgba(0,0,0,0.6);
     }
     
+    .streaming-indicator {
+        color: #00fbff;
+        font-family: 'Orbitron', sans-serif;
+        font-weight: 900;
+        text-shadow: 0 0 10px #00fbff;
+        animation: pulse 1s infinite;
+    }
+    
+    @keyframes pulse {
+        0% { opacity: 1; }
+        50% { opacity: 0.5; }
+        100% { opacity: 1; }
+    }
+    
     #MainMenu, header, footer {visibility: hidden;}
     div[data-testid="stDecoration"] {display:none;}
     
@@ -93,163 +109,153 @@ st.markdown("""
         background: linear-gradient(#00fbff, #005f61); 
         border-radius: 10px; 
     }
-    
-    /* STREAMING INDICATOR */
-    .streaming-indicator {
-        color: #00fbff;
-        font-family: 'Orbitron', sans-serif;
-        font-weight: 900;
-        text-shadow: 0 0 10px #00fbff;
-        animation: pulse 1.5s infinite;
-    }
-    @keyframes pulse {
-        0% { opacity: 1; }
-        50% { opacity: 0.5; }
-        100% { opacity: 1; }
-    }
     </style>
     """, unsafe_allow_html=True)
 
 st.write("<h1>GYAN SETU</h1>", unsafe_allow_html=True)
 
-# --- TRUE STREAMING AUDIO PLAYER (Web Audio API) ---
-def create_streaming_audio_player():
-    """Creates REAL-TIME streaming audio player using Web Audio API"""
+# --- TRUE STREAMING WEB AUDIO API ---
+def init_streaming_audio():
+    """Web Audio API for ZERO-LATENCY audio streaming"""
     js_code = """
     <script>
     let audioContext = null;
     let audioQueue = [];
     let isPlaying = false;
     let currentSource = null;
-
+    
     function initAudioContext() {
         if (!audioContext) {
             audioContext = new (window.AudioContext || window.webkitAudioContext)();
         }
         return audioContext;
     }
-
+    
     window.playStreamingAudio = function(b64data, chunkId) {
         initAudioContext();
-        
         const binaryString = atob(b64data);
         const bytes = new Uint8Array(binaryString.length);
         for (let i = 0; i < binaryString.length; i++) {
             bytes[i] = binaryString.charCodeAt(i);
         }
-        
         audioQueue.push({data: bytes, id: chunkId});
         processAudioQueue();
     };
-
+    
     async function processAudioQueue() {
         if (isPlaying || audioQueue.length === 0) return;
-        
         isPlaying = true;
         const audioChunk = audioQueue.shift();
-        
         try {
             const arrayBuffer = audioChunk.data.buffer;
             const audioBuffer = await audioContext.decodeAudioData(arrayBuffer.slice(0));
-            
             const source = audioContext.createBufferSource();
             source.buffer = audioBuffer;
             source.connect(audioContext.destination);
             source.onended = () => {
                 isPlaying = false;
-                processAudioQueue(); // Auto-play next chunk
+                processAudioQueue();
             };
-            source.start();
+            source.start(0);
             currentSource = source;
         } catch(e) {
-            console.error('Audio decode error:', e);
+            console.error('Audio error:', e);
             isPlaying = false;
             processAudioQueue();
         }
     }
-
-    // Stop all audio
+    
     window.stopAllAudio = function() {
-        if (currentSource) {
-            currentSource.stop();
-        }
+        if (currentSource) currentSource.stop();
         audioQueue = [];
         isPlaying = false;
     };
     </script>
-    
-    <div id="streaming-status" style="text-align:center; color:#00fbff; font-family:Orbitron; font-size:20px;">
-        🎤 Live Voice Streaming Ready
+    <div id="audio-status" style="text-align:center; color:#00fbff; font-family:Orbitron; font-size:20px;">
+        🎤 TRUE STREAMING ACTIVE - Madhur/Prabhat Voices
     </div>
     """
     components.html(js_code, height=100)
 
-# Initialize streaming player
-if 'audio_initialized' not in st.session_state:
-    create_streaming_audio_player()
-    st.session_state.audio_initialized = True
+# Initialize audio (once)
+if 'audio_ready' not in st.session_state:
+    init_streaming_audio()
+    st.session_state.audio_ready = True
 
-# --- VOICE INPUT ---
+# --- MIC INPUT ---
 query_voice = speech_to_text(
     start_prompt="TAP TO SPEAK", 
-    stop_prompt="GYAN SETU IS PROCESSING...", 
+    stop_prompt="🔄 GYAN SETU LIVE STREAMING...", 
     language='en-IN', 
     use_container_width=True,
     just_once=True, 
-    key='core_engine_v12_final'
+    key='core_streaming_mic'
 )
 
 if query_voice:
     st.markdown(f'<div class="chat-container user-box"><b>Student:</b> {query_voice}</div>', unsafe_allow_html=True)
     
-    # REAL-TIME STREAMING CONTAINER
-    response_container = st.empty()
+    # MAIN STREAMING CONTAINER
+    response_container = st.container()
     
-    # **100% TRUE ASYNC STREAMING**
-    async def process_realtime_stream():
-        text_display = ""
-        stream_status = response_container.container()
+    with response_container:
+        st.markdown('<div class="chat-container streaming-indicator"><b>Gyan Setu:</b> ░░░░░ LIVE TOKEN STREAMING ░░░░░</div>', unsafe_allow_html=True)
+        
+        full_text = ""
+        stream_placeholder = st.empty()
+        
+        # *** 100% TRUE ASYNC STREAMING EXECUTION ***
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
         
         try:
-            text_gen = aura.ask_stream(query_voice, st.session_state.messages)
+            text_generator = aura.ask_stream(query_voice, st.session_state.messages)
+            async_stream = aura.stream_audio_realtime(text_generator)
             
-            stream_status.markdown('<div class="chat-container streaming-indicator"><b>Gyan Setu:</b> ░░░░░░░░░░░░ LIVE STREAMING</div>', unsafe_allow_html=True)
-            
-            async for stream_item in aura.stream_audio_realtime(text_gen):
+            async for stream_item in loop.run_until_complete(async_stream):
                 if stream_item["type"] == "text":
-                    text_display += stream_item["data"]
-                    # Live text update
-                    stream_status.markdown(f'<div class="chat-container"><b>Gyan Setu:</b> {text_display}█</div>', unsafe_allow_html=True)
+                    full_text += stream_item["data"]
+                    # REAL-TIME TEXT DISPLAY
+                    stream_placeholder.markdown(
+                        f'<div class="chat-container"><b>Gyan Setu:</b> {full_text}█</div>', 
+                        unsafe_allow_html=True
+                    )
                 
                 elif stream_item["type"] == "audio":
-                    # IMMEDIATE AUDIO PLAYBACK - NO DELAY!
+                    # ZERO DELAY AUDIO PLAYBACK
                     components.html(f"""
                     <script>
-                        playStreamingAudio('{stream_item["data"]}', {stream_item["id"]});
+                        playStreamingAudio('{stream_item["data"]}', '{stream_item["id"]}');
                     </script>
                     """, height=0)
             
-            # Final clean display
-            stream_status.markdown(f'<div class="chat-container"><b>Gyan Setu:</b> {text_display}</div>', unsafe_allow_html=True)
+            # FINAL CLEAN DISPLAY
+            stream_placeholder.markdown(
+                f'<div class="chat-container"><b>Gyan Setu:</b> {full_text}</div>', 
+                unsafe_allow_html=True
+            )
+            
+            # History update
+            st.session_state.messages.append({"role": "user", "content": query_voice})
+            st.session_state.messages.append({"role": "assistant", "content": full_text})
+            st.session_state.final_responses.append(full_text)
             
         except Exception as e:
-            st.error(f"Stream Error: {e}")
-    
-    # Run the async streaming
-    asyncio.run(process_realtime_stream())
-    
-    # Update history
-    st.session_state.messages.append({"role": "user", "content": query_voice})
-    st.session_state.messages.append({"role": "assistant", "content": text_display})
+            st.error(f"Stream Error: {str(e)}")
+            st.markdown(f'<div class="chat-container"><b>Gyan Setu:</b> Processing complete.</div>', unsafe_allow_html=True)
+        
+        loop.close()
 
 else:
     st.markdown("""
         <div style="text-align:center; padding:60px;">
             <div style="color:#00fbff; font-family:Orbitron; letter-spacing:5px; font-weight:900; font-size:22px; text-shadow: 0 0 15px rgba(0, 251, 255, 0.4);">
-                SYSTEM ONLINE: GYAN SETU - TRUE STREAMING READY
+                SYSTEM ONLINE: GYAN SETU v2.0
             </div>
             <div style="color:#94a3b8; font-size:18px; margin-top:20px;">
-                Tap mic → Instant text + voice streaming (Madhur/Prabhat)
+                👆 Tap mic → Watch text + voice stream in REAL-TIME<br>
+                • Madhur (Hindi) • Prabhat (English)<br>
+                • ZERO delay • Token-by-token sync
             </div>
         </div>
     """, unsafe_allow_html=True)
