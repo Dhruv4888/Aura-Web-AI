@@ -50,7 +50,6 @@ st.markdown("""
 st.write("<h1>GYAN SETU</h1>", unsafe_allow_html=True)
 
 def inject_isolated_audio(b64_data, chunk_id):
-    """Audio injection without blocking the UI thread."""
     audio_markup = f"""
         <div id="vocal-unit-{chunk_id}" style="display:none;">
             <audio id="audio-core-{chunk_id}" autoplay="true">
@@ -61,7 +60,7 @@ def inject_isolated_audio(b64_data, chunk_id):
     st.components.v1.html(audio_markup, height=0)
 
 async def play_audio_task(text_block, counter):
-    """Background task to fetch and inject audio."""
+    """Background audio processing."""
     vocal_hex = await aura.generate_voice_async(text_block)
     if vocal_hex:
         inject_isolated_audio(vocal_hex, counter)
@@ -72,36 +71,34 @@ async def process_interaction(query):
     ui_anchor = st.empty()
     audio_counter = 0
     
-    # Using the Async Generator from ai_engine.py
+    # CRITICAL FIX: 'async for' for asynchronous generators
     async for alphabet in aura.ask_stream(query, st.session_state.messages):
         if alphabet == "||SYNC_SIGNAL||":
             if chunk_buffer.strip():
                 audio_counter += 1
-                # FIRE AND FORGET: Audio task starts in background, typing continues
+                # Triggering background audio task
                 asyncio.create_task(play_audio_task(chunk_buffer.strip(), audio_counter))
                 chunk_buffer = ""
         else:
             full_transcription += alphabet
             chunk_buffer += alphabet
-            # Real-time character rendering
             ui_anchor.markdown(f'<div class="chat-container"><b>Gyan Setu:</b> {full_transcription}▒</div>', unsafe_allow_html=True)
-            # Essential for yielding control to the event loop
-            await asyncio.sleep(0.001) 
+            await asyncio.sleep(0.005) # Yield for UI update
 
-    # Final UI cleanup
     ui_anchor.markdown(f'<div class="chat-container"><b>Gyan Setu:</b> {full_transcription}</div>', unsafe_allow_html=True)
     st.session_state.messages.append({"role": "user", "content": query})
     st.session_state.messages.append({"role": "assistant", "content": full_transcription})
 
-# --- UI INPUT SECTION ---
+# --- UI INPUT ---
 query_voice = speech_to_text(
     start_prompt="TAP TO SPEAK", stop_prompt="GYAN SETU IS PROCESSING...", 
-    language='en-IN', use_container_width=True, just_once=True, key='v14_parallel_sync'
+    language='en-IN', use_container_width=True, just_once=True, key='v14_final_sync'
 )
 
 if query_voice:
     st.markdown(f'<div class="chat-container user-box"><b>Student:</b> {query_voice}</div>', unsafe_allow_html=True)
     with st.spinner("Analyzing..."):
+        # This handles the top-level async execution
         asyncio.run(process_interaction(query_voice))
 else:
     st.markdown("""
