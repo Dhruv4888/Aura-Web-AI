@@ -142,13 +142,16 @@ if query_voice:
         ui_anchor = st.empty()
         audio_counter = 0
         
-        # LOGIC GATE: Processing the mentor's concise and fast stream.
+        # LOGIC GATE: Processing the mentor's concise and fast alphabet-by-alphabet stream.
+        # aura.ask_stream now yields character-by-character as per updated ai_engine.py.
         for text_fragment in aura.ask_stream(query_voice, st.session_state.messages):
+            
             if text_fragment == "||SYNC_SIGNAL||":
+                # Check if buffer contains meaningful data before vocalization
                 if chunk_buffer.strip():
                     audio_counter += 1
                     
-                    # Convert the current concise step into vocal data.
+                    # Convert the gathered logical block into vocal data.
                     vocal_hex = aura.get_audio_data(chunk_buffer.strip())
                     
                     if vocal_hex:
@@ -157,35 +160,42 @@ if query_voice:
                         # --- ENHANCED DYNAMIC SYNC LOGIC ---
                         # Calculating phonological weight for all Class 1-12 subjects.
                         
-                        # Detect math symbols for specialized timing
+                        # Detect math symbols for specialized timing to ensure clear explanation
                         math_symbols = re.findall(r'[0-9\+\-\=\^\/x²³\(\)]', chunk_buffer)
                         complexity_score = len(math_symbols)
                         text_length = len(chunk_buffer)
                         
-                        # Multiplier adjustment for +10% rate in engine
-                        # Standard char speed: 0.082s. Math symbol speed: 0.3s.
+                        # Multiplier adjustment for +10% rate in engine synthesis
+                        # Standard char speed: 0.082s per character.
+                        # Math symbol speed: 0.35s to allow students to digest numbers/symbols.
                         timing_multiplier = 0.082
-                        extra_symbol_pause = complexity_score * 0.30
+                        extra_symbol_pause = complexity_score * 0.35
                         
                         # FINAL BLOCKING CALCULATION:
-                        # (Chars * Speed) + (Math Overhead) + Buffer (1.0s for fast processing)
-                        # Reduced from 1.1s to 1.0s for the new faster engine.
-                        calculated_wait = (text_length * timing_multiplier) + extra_symbol_pause + 1.0
+                        # (Chars * Speed) + (Math Overhead) + Buffer (1.2s for server-to-client overhead)
+                        # We maintain a 1.2s safety buffer to ensure audio doesn't overlap or cut.
+                        calculated_wait = (text_length * timing_multiplier) + extra_symbol_pause + 1.2
                         
-                        # Execution Pause: Locks the next chunk until current is spoken.
+                        # Execution Pause: Locks the next chunk generation until current is spoken.
                         time.sleep(calculated_wait)
                     
+                    # Reset the buffer for the next sentence block
                     chunk_buffer = "" 
             else:
+                # Direct Alphabet/Character update
                 full_transcription += text_fragment
                 chunk_buffer += text_fragment
-                # Scholarly typing effect for visual engagement.
+                
+                # Scholarly typing effect: The cursor '▒' follows the one-by-one alphabet generation.
                 ui_anchor.markdown(f'<div class="chat-container"><b>Gyan Setu:</b> {full_transcription}▒</div>', unsafe_allow_html=True)
+                
+                # Optional: Fine-tune the local UI speed if needed 
+                # time.sleep(0.005) # Already handled by ai_engine.stream_alphabets()
         
-        # UI Stabilization: Cleaning up the final response.
+        # UI Stabilization: Cleaning up the final response cursor.
         ui_anchor.markdown(f'<div class="chat-container"><b>Gyan Setu:</b> {full_transcription}</div>', unsafe_allow_html=True)
         
-        # Update session history for contextual continuity.
+        # Update session history for contextual continuity in the next turn.
         st.session_state.messages.append({"role": "user", "content": query_voice})
         st.session_state.messages.append({"role": "assistant", "content": full_transcription})
 
@@ -195,6 +205,9 @@ else:
         <div style="text-align:center; padding:60px;">
             <div style="color:#00fbff; font-family:Orbitron; letter-spacing:5px; font-weight:900; font-size:22px; text-shadow: 0 0 15px rgba(0, 251, 255, 0.4);">
                 SYSTEM ONLINE: GYAN SETU
+            </div>
+            <div style="color:#ffffff; font-family:Rajdhani; margin-top:20px; font-size:18px; opacity:0.8;">
+                Ready to solve complex academic queries at lightning speed.
             </div>
         </div>
     """, unsafe_allow_html=True)
