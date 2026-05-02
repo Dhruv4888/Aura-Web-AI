@@ -142,7 +142,7 @@ class AuraAssistant:
             # Yielding each alphabet to the main stream
             yield char
             # Critical Delay: 0.02s ensures visibility of the 'typing' effect
-            time.sleep(0.02)
+            time.sleep(0.82)
 
     def ask_stream(self, query, history):
         """
