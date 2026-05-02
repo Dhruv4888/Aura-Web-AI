@@ -6,12 +6,14 @@ import re
 import streamlit as st
 import base64
 import io
+import time
 
 class AuraAssistant:
     def __init__(self):
         """
         Gyan Setu Core Engine Initialization.
         Focus: Maximum stability, high-speed response, and strict termination.
+        Enhanced: Added support for granular alphabet-level streaming.
         """
         self.model = "llama-3.3-70b-versatile"
         try:
@@ -128,10 +130,21 @@ class AuraAssistant:
             print(f"Vocal Processing Error: {e}")
             return None
 
+    def stream_alphabets(self, text, delay=0.01):
+        """
+        GRANULAR ALPHABET STREAMING LOGIC.
+        Iterates through every character in a token to simulate real-time typing.
+        This is used to maintain visual 'sync' while the backend processes audio.
+        """
+        for char in text:
+            yield char
+            time.sleep(delay)
+
     def ask_stream(self, query, history):
         """
         The Reasoning Core (STRICT TERMINATION LOGIC). 
         Prevents infinite generation and historical repetition.
+        Now supports character-level yielding for 'one-by-one' visual effect.
         """
         # Improved Detection: Direct Hindi characters or common Hinglish markers
         is_hindi_in = self.is_hindi(query)
@@ -175,8 +188,13 @@ class AuraAssistant:
             for chunk in completion:
                 content = chunk.choices[0].delta.content
                 if content:
-                    yield content
+                    # ONE-BY-ONE ALPHABET GENERATION LOGIC
+                    # We iterate through each character in the received chunk
+                    for char in self.stream_alphabets(content):
+                        yield char
+                    
                     # Signal for vocal block separation - Simplified and Faster
+                    # Note: We check if the chunk contains punctuation to trigger sync
                     if any(p in content for p in ['.', '!', '?', '।', '\n', ':', ';']):
                         yield "||SYNC_SIGNAL||"
                         
