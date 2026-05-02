@@ -5,13 +5,12 @@ from groq import Groq
 import re
 import streamlit as st
 import base64
-import time
 
 class AuraAssistant:
     def __init__(self):
         """
-        Gyan Setu Core Engine - Async V13.
-        Focus: Parallel Processing of Text and Audio for Real-time Sync.
+        Gyan Setu Core Engine - Async V14.
+        Optimized for Parallel Text-to-Voice Synchronization.
         """
         self.model = "llama-3.3-70b-versatile"
         try:
@@ -59,10 +58,9 @@ class AuraAssistant:
         except:
             return None
 
-    def ask_stream(self, query, history):
+    async def ask_stream(self, query, history):
         """
-        The Master Streamer: Yields characters and background audio tasks.
-        This is the engine for 'Likhte-Likhte-Bolna'.
+        Async Streamer: Yields characters and sync signals without blocking the loop.
         """
         is_hindi_in = self.is_hindi(query)
         forced_lang = "HINDI (Strictly Devanagari)" if is_hindi_in else "ENGLISH"
@@ -78,21 +76,24 @@ class AuraAssistant:
         messages.append({"role": "user", "content": query})
 
         try:
-            # Groq Stream - Token by Token
-            completion = self.client.chat.completions.create(
-                messages=messages, model=self.model, stream=True, temperature=0.1, max_tokens=450
+            # Groq Stream - Calling via thread to keep it async friendly
+            completion = await asyncio.to_thread(
+                self.client.chat.completions.create,
+                messages=messages, 
+                model=self.model, 
+                stream=True, 
+                temperature=0.1, 
+                max_tokens=450
             )
 
             for chunk in completion:
                 token = chunk.choices[0].delta.content
                 if token:
-                    # Character by Character UI Flow
                     for char in token:
                         yield char
-                        # Ultra-fast typing feel
-                        time.sleep(0.01)
+                        # Smooth typing speed
+                        await asyncio.sleep(0.01)
 
-                    # Trigger Audio Sync on sentence completion
                     if any(p in token for p in ['.', '!', '?', '।', '\n']):
                         yield "||SYNC_SIGNAL||"
                         
