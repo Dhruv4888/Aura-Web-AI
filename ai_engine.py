@@ -13,7 +13,7 @@ class AuraAssistant:
         """
         Gyan Setu Core Engine Initialization.
         Focus: Maximum stability, high-speed response, and strict termination.
-        Enhanced: Added support for granular alphabet-level streaming.
+        Enhanced: Precision timing for alphabet-level streaming.
         """
         self.model = "llama-3.3-70b-versatile"
         try:
@@ -47,7 +47,6 @@ class AuraAssistant:
         text = re.sub(r'\\text\{.*?\}', '', text) 
         
         # High-Speed Mathematical Phonetic Mapping
-        # Focused on clean breaks to allow the sync engine to process blocks.
         math_map = {
             "²": " square, ",
             "^2": " square, ",
@@ -94,7 +93,7 @@ class AuraAssistant:
 
     async def _generate_voice_bytes(self, text):
         """
-        Asynchronous Voice Synthesis.
+        Asynchronous Voice Synthesis via Edge-TTS.
         Configured for 1.1x speed (Academic Efficiency) with authoritative pitch.
         """
         selected_voice = "hi-IN-MadhurNeural" if self.is_hindi(text) else "en-IN-PrabhatNeural"
@@ -111,7 +110,7 @@ class AuraAssistant:
     def get_audio_data(self, text):
         """
         High-Concurrency Audio Interface.
-        Converts logical text blocks into base64 vocal packets.
+        Converts logical text blocks into base64 vocal packets for UI injection.
         """
         clean_text = self.clean_text_for_speech(text)
         if not clean_text.strip():
@@ -130,21 +129,25 @@ class AuraAssistant:
             print(f"Vocal Processing Error: {e}")
             return None
 
-    def stream_alphabets(self, text, delay=0.01):
+    def stream_alphabets(self, text):
         """
-        GRANULAR ALPHABET STREAMING LOGIC.
-        Iterates through every character in a token to simulate real-time typing.
-        This is used to maintain visual 'sync' while the backend processes audio.
+        ULTRA-GRANULAR CHARACTER GENERATOR.
+        This function breaks down LLM tokens into individual characters.
+        A controlled delay is injected to force the UI to render 'one-by-one'.
         """
+        if not text:
+            return
+            
         for char in text:
+            # Yielding each alphabet to the main stream
             yield char
-            time.sleep(delay)
+            # Critical Delay: 0.02s ensures visibility of the 'typing' effect
+            time.sleep(0.02)
 
     def ask_stream(self, query, history):
         """
         The Reasoning Core (STRICT TERMINATION LOGIC). 
-        Prevents infinite generation and historical repetition.
-        Now supports character-level yielding for 'one-by-one' visual effect.
+        Now fully integrated with alphabet-level streaming for visual sync.
         """
         # Improved Detection: Direct Hindi characters or common Hinglish markers
         is_hindi_in = self.is_hindi(query)
@@ -166,7 +169,7 @@ class AuraAssistant:
         2. CONTENT: Answer ONLY the specific academic question. No conversational filler.
         3. LENGTH: Maximum 3 to 5 logical sentences. For Math, show steps clearly.
         4. TERMINATION: Do not ask follow-up questions. Finish and STOP.
-        5. SYNC: Put a period (.) or (।) after EVERY step or sentence to signal the audio engine.
+        5. SYNC: Put a period (.) or (। ) after EVERY sentence to signal the audio engine.
         6. PERSONA: You are a male teacher. Use formal, authoritative language."""
 
         messages = [{"role": "system", "content": system_instruction}]
@@ -180,22 +183,21 @@ class AuraAssistant:
                 messages=messages, 
                 model=self.model,
                 stream=True,
-                temperature=0.1, # Low temp for high precision
+                temperature=0.1, 
                 max_tokens=450, 
                 stop=["Student Query:", "Student:", "\n\n\n"] 
             )
             
             for chunk in completion:
-                content = chunk.choices[0].delta.content
-                if content:
-                    # ONE-BY-ONE ALPHABET GENERATION LOGIC
-                    # We iterate through each character in the received chunk
-                    for char in self.stream_alphabets(content):
-                        yield char
+                token_text = chunk.choices[0].delta.content
+                if token_text:
+                    # Execute alphabet-level generator for every token received
+                    # This creates the 'one-by-one' visual effect on the screen
+                    for alphabet in self.stream_alphabets(token_text):
+                        yield alphabet
                     
-                    # Signal for vocal block separation - Simplified and Faster
-                    # Note: We check if the chunk contains punctuation to trigger sync
-                    if any(p in content for p in ['.', '!', '?', '।', '\n', ':', ';']):
+                    # Logic Gate for Sync: Trigger audio processing on sentence completion
+                    if any(p in token_text for p in ['.', '!', '?', '।', '\n', ':', ';']):
                         yield "||SYNC_SIGNAL||"
                         
         except Exception as e:
