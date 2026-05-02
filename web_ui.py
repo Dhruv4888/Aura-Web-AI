@@ -2,7 +2,6 @@ import streamlit as st
 from ai_engine import aura
 from streamlit_mic_recorder import speech_to_text
 import asyncio
-import time
 import re
 
 # --- GLOBAL ACADEMIC ENGINE CONFIGURATION ---
@@ -24,7 +23,7 @@ st.markdown("""
     h1 { 
         color: #00fbff !important; font-family: 'Orbitron', sans-serif !important; 
         text-align: center !important; font-size: 65px !important; 
-        text-shadow: 0 0 40px #00fbff, 0 0 15px rgba(0, 251, 255, 0.5);
+        text-shadow: 0 0 40px #00fbff, 0 0 15px rgba(0, 251, 255, 0.4);
         margin-top: -85px; letter-spacing: 12px; text-transform: uppercase; font-weight: 900;
     }
     button[data-testid="stBaseButton-secondary"] {
@@ -33,14 +32,14 @@ st.markdown("""
         border: 15px solid #1e293b !important; font-family: 'Orbitron', sans-serif !important;
         font-weight: 900 !important; margin: 45px auto !important;
         display: flex !important; justify-content: center !important; align-items: center !important;
-        box-shadow: 0 0 70px rgba(0, 251, 255, 0.35) !important;
+        box-shadow: 0 0 70px rgba(0, 251, 255, 0.3) !important;
         transition: all 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
     }
     .chat-container {
         background: rgba(15, 23, 42, 0.95); padding: 50px; border-radius: 35px;
         border-left: 20px solid #00fbff; color: #f1f5f9; margin-top: 40px;
         font-family: 'Rajdhani', sans-serif; line-height: 2.1; font-size: 28px;
-        box-shadow: 30px 30px 80px rgba(0,0,0,0.85); backdrop-filter: blur(25px);
+        box-shadow: 30px 30px 80px rgba(0,0,0,0.8); backdrop-filter: blur(25px);
     }
     .user-box { border-left: 20px solid #ffffff; background: rgba(30, 41, 59, 0.95); }
     #MainMenu, header, footer {visibility: hidden;}
@@ -51,6 +50,7 @@ st.markdown("""
 st.write("<h1>GYAN SETU</h1>", unsafe_allow_html=True)
 
 def inject_isolated_audio(b64_data, chunk_id):
+    """Audio injection without blocking the UI thread."""
     audio_markup = f"""
         <div id="vocal-unit-{chunk_id}" style="display:none;">
             <audio id="audio-core-{chunk_id}" autoplay="true">
@@ -60,46 +60,48 @@ def inject_isolated_audio(b64_data, chunk_id):
     """
     st.components.v1.html(audio_markup, height=0)
 
+async def play_audio_task(text_block, counter):
+    """Background task to fetch and inject audio."""
+    vocal_hex = await aura.generate_voice_async(text_block)
+    if vocal_hex:
+        inject_isolated_audio(vocal_hex, counter)
+
 async def process_interaction(query):
     full_transcription = ""
     chunk_buffer = ""
     ui_anchor = st.empty()
     audio_counter = 0
     
-    # Producer-Consumer Loop: Handling text stream and audio tasks
-    for alphabet in aura.ask_stream(query, st.session_state.messages):
+    # Using the Async Generator from ai_engine.py
+    async for alphabet in aura.ask_stream(query, st.session_state.messages):
         if alphabet == "||SYNC_SIGNAL||":
             if chunk_buffer.strip():
                 audio_counter += 1
-                # Triggering audio in background
-                vocal_hex = await aura.generate_voice_async(chunk_buffer.strip())
-                if vocal_hex:
-                    inject_isolated_audio(vocal_hex, audio_counter)
-                    
-                    # Timing calculation to maintain pace without blocking typing
-                    text_length = len(chunk_buffer)
-                    math_symbols = len(re.findall(r'[0-9\+\-\=\^\/x²³\(\)]', chunk_buffer))
-                    wait_time = (text_length * 0.082) + (math_symbols * 0.35) + 0.5
-                    await asyncio.sleep(wait_time) 
+                # FIRE AND FORGET: Audio task starts in background, typing continues
+                asyncio.create_task(play_audio_task(chunk_buffer.strip(), audio_counter))
                 chunk_buffer = ""
         else:
             full_transcription += alphabet
             chunk_buffer += alphabet
+            # Real-time character rendering
             ui_anchor.markdown(f'<div class="chat-container"><b>Gyan Setu:</b> {full_transcription}▒</div>', unsafe_allow_html=True)
-            await asyncio.sleep(0.001) # Yield to event loop for smooth rendering
+            # Essential for yielding control to the event loop
+            await asyncio.sleep(0.001) 
 
+    # Final UI cleanup
     ui_anchor.markdown(f'<div class="chat-container"><b>Gyan Setu:</b> {full_transcription}</div>', unsafe_allow_html=True)
     st.session_state.messages.append({"role": "user", "content": query})
     st.session_state.messages.append({"role": "assistant", "content": full_transcription})
 
+# --- UI INPUT SECTION ---
 query_voice = speech_to_text(
     start_prompt="TAP TO SPEAK", stop_prompt="GYAN SETU IS PROCESSING...", 
-    language='en-IN', use_container_width=True, just_once=True, key='v13_async_engine'
+    language='en-IN', use_container_width=True, just_once=True, key='v14_parallel_sync'
 )
 
 if query_voice:
     st.markdown(f'<div class="chat-container user-box"><b>Student:</b> {query_voice}</div>', unsafe_allow_html=True)
-    with st.spinner("Analyzing Query..."):
+    with st.spinner("Analyzing..."):
         asyncio.run(process_interaction(query_voice))
 else:
     st.markdown("""
